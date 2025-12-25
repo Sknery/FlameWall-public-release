@@ -1,0 +1,57 @@
+GNU AFFERO GENERAL PUBLIC LICENSE
+Version 3, 19 November 2007
+
+Copyright (C) 2025 Sknery and FlameWall Contributors
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as published
+by the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+================================================================================
+
+ADDITIONAL TERMS FOR COMMERCIAL USE
+
+The AGPL v3 license above applies to all use of this software EXCEPT
+for commercial purposes as defined below.
+
+COMMERCIAL USE RESTRICTIONS:
+
+1. You may NOT use this software to provide a paid service or SaaS offering
+   without obtaining a separate Commercial License.
+
+2. You may NOT sell, resell, or distribute this software as a commercial 
+   product without obtaining a separate Commercial License.
+
+3. You may NOT rebrand, white-label, or remove attribution for commercial
+   purposes without obtaining a separate Commercial License.
+
+NON-COMMERCIAL USE (FREE under AGPL v3):
+
+✅ Running for your own Minecraft server (community/non-profit)
+✅ Modifying for your own use
+✅ Contributing back to the project
+✅ Using for educational purposes
+✅ Self-hosting for your own community
+
+COMMERCIAL LICENSE:
+
+For commercial use cases listed above, please contact:
+Email: business@flamewall.io
+Web: https://flamewall.io/commercial
+
+Commercial licenses are available starting at $500.
+
+================================================================================
+
+For the full text of GNU AGPL v3, see:
+https://www.gnu.org/licenses/agpl-3.0.txt
+

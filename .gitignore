@@ -1,0 +1,60 @@
+# Environment variables
+.env
+.env.development.local
+.env.test.local
+.env.production.local
+.env.local
+.env:Zone.Identifier
+**/.env:Zone.Identifier
+
+# Backup files
+*.bak
+**/*.bak
+
+# Temporary files
+flamewall.txt
+export_code.sh
+
+# Shell scripts
+*.sh
+**/*.sh
+
+# Git submodules
+.gitmodules 
+
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Build outputs
+dist/
+**/dist/
+build/
+**/build/
+
+# Generated files
+stats.html
+**/stats.html
+*.stats.html
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Docker volumes
+postgres_data*/
+pgadmin_data*/
+uploads_data*/ 

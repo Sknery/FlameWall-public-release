@@ -1,0 +1,198 @@
+/* frontend/src/index.css */
+
+/* --- Base Tailwind Styles --- */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* --- SPA Fullscreen Fix (CRITICAL) --- */
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+  overscroll-behavior: none;
+}
+
+/* --- Rendered Content Styles (Typography) --- */
+.prose {
+  overflow-wrap: break-word;
+}
+
+.smart-wrap {
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+/* --- Editor Image Styles --- */
+.image-node-view-wrapper.not-prose {
+  position: relative;
+  margin: 0 !important;
+}
+.image-align-wrapper {
+  display: flex;
+}
+.image-align-wrapper[data-align="left"] { justify-content: flex-start; }
+.image-align-wrapper[data-align="center"] { justify-content: center; }
+.image-align-wrapper[data-align="right"] { justify-content: flex-end; }
+.resizable-image-container-native {
+  resize: horizontal;
+  overflow: hidden;
+  display: inline-block;
+  min-width: 100px;
+  max-width: 100%;
+  border: 2px dashed hsl(var(--border));
+  line-height: 0;
+}
+.resizable-image-container-native:hover {
+  border-color: hsl(var(--primary));
+}
+.resizable-image {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* --- Shadcn/ui Color Palette --- */
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 222.2 47.4% 11.2%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 84% 4.9%;
+    /* [!code focus start] */
+    /* Увеличиваем радиус для мягкости Nunito */
+    --radius: 1rem;
+    /* [!code focus end] */
+  }
+
+  .dark {
+    --background: 240 10% 4%;       
+    --foreground: 0 0% 98%;
+    --card: 240 6% 7%;              
+    --card-foreground: 0 0% 98%;
+    --popover: 240 6% 7%;           
+    --popover-foreground: 0 0% 98%;
+    --primary: 18 100% 50%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 240 4% 12%;        
+    --secondary-foreground: 0 0% 98%;
+    --muted: 240 4% 12%;            
+    --muted-foreground: 240 4% 60%;
+    --accent: 240 4% 12%;           
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 4% 14%;           
+    --input: 240 4% 14%;
+    --ring: 18 100% 50%;
+    --radius: 1rem; /* Мягкий радиус */
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    /* [!code focus start] */
+    /* Добавляем "Ambient Glow" на фон, чтобы убрать "пластиковость" */
+    background-image: radial-gradient(circle at 50% 0%, hsl(var(--primary) / 0.15), transparent 40%);
+    background-attachment: fixed;
+    /* [!code focus end] */
+  }
+  
+  input:focus, input:focus-visible,
+  textarea:focus, textarea:focus-visible,
+  button:focus, button:focus-visible {
+    outline: none;
+  }
+}
+
+@layer base {
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--secondary));
+    border-radius: 10px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--primary));
+  }
+}
+
+@layer utilities {
+  .rtl { direction: rtl; }
+  .ltr { direction: ltr; }
+  .scrollbar-left { direction: rtl; }
+  .scrollbar-left > * { direction: ltr; }
+}
+
+/* --- Grid Utilities --- */
+.responsive-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    grid-auto-rows: 1fr;
+}
+
+.responsive-grid-posts {
+    display: grid;
+    gap: 1.5rem; 
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    grid-auto-rows: 1fr;
+}
+
+.responsive-grid-messages {
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    grid-auto-rows: min-content;
+}
+
+.responsive-grid-sm {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    grid-auto-rows: 1fr;
+}
+
+/* Add this to frontend/src/index.css */
+
+.responsive-grid-achievement {
+    display: grid;
+    gap: 1.5rem;
+    /* Минимум 320px. Если места меньше, перенос на новую строку. */
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    /* Выравнивание по верху, чтобы карточки не растягивались по высоте самой высокой */
+    align-items: start; 
+}
+
+/* Для очень маленьких экранов (меньше 350px) разрешаем сжиматься */
+@media (max-width: 350px) {
+    .responsive-grid-achievement {
+        grid-template-columns: 1fr;
+    }
+}

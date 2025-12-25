@@ -1,0 +1,88 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile.prod
+    container_name: flamewall_backend_prod
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+    environment:
+      - FORCE_COLOR=1
+    env_file: ./.env
+    volumes:
+      - uploads_data:/usr/src/app/uploads
+    command: |
+      sh -c "
+        mkdir -p /usr/src/app/uploads/avatars && \
+        mkdir -p /usr/src/app/uploads/banners && \
+        mkdir -p /usr/src/app/uploads/content && \
+        mkdir -p /usr/src/app/uploads/pages && \
+        mkdir -p /usr/src/app/uploads/shop && \
+        mkdir -p /usr/src/app/uploads/achievements && \
+        chmod -R 755 /usr/src/app/uploads && \
+        exec node dist/main
+      "
+    networks:
+      - flamewall_net
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    env_file: ./.env
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile.prod
+      args:
+        - VITE_VAPID_PUBLIC_KEY=${VITE_VAPID_PUBLIC_KEY}
+        - VITE_EXTERNAL_SHOP_URL=${VITE_EXTERNAL_SHOP_URL}
+    container_name: flamewall_frontend_prod
+    restart: unless-stopped
+    networks:
+      - flamewall_net
+
+  db:
+    image: postgres:15
+    container_name: flamewall_db_prod
+    restart: unless-stopped
+    env_file: ./.env
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - flamewall_net
+
+  nginx:
+    image: nginx:alpine
+    container_name: flamewall_nginx_proxy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.prod.conf:/etc/nginx/nginx.conf:ro
+      - uploads_data:/usr/share/nginx/html/uploads:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - /var/www/certbot:/var/www/certbot
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - flamewall_net
+
+volumes:
+  postgres_data:
+  uploads_data:
+
+networks:
+  flamewall_net:
+    driver: bridge

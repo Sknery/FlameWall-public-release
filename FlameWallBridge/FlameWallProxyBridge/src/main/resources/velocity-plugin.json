@@ -1,0 +1,10 @@
+{
+  "id": "flamewallproxybridge",
+  "name": "FlameWallProxyBridge",
+  "version": "1.0-SNAPSHOT",
+  "description": "The main proxy bridge for FlameWall website integration.",
+  "authors": [
+    "Sknery"
+  ],
+  "main": "com.flamewall.proxybridge.FlameWallProxyBridge"
+}

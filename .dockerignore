@@ -1,0 +1,12 @@
+# Игнорировать локальные файлы окружения, чтобы они не попали в сборку
+frontend/.env
+frontend/.env.local
+frontend/.env.development.local
+
+# Игнорировать папки с зависимостями, они устанавливаются внутри контейнера
+**/node_modules
+backend/dist
+
+# Системные файлы
+.git
+.idea

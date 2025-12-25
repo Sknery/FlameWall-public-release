@@ -1,0 +1,5 @@
+name: FlameWallSpigotHelper
+version: 1.0
+main: com.flamewall.spigothelper.FlameWallSpigotHelper
+api-version: '1.20'
+depend: [PlaceholderAPI]

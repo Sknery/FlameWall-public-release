@@ -1,0 +1,10 @@
+rank-sync:
+  enabled: true
+  placeholder: "%luckperms_primary_group_name%"
+
+intercept-commands:
+  - "lp user {player} parent set {rank}"
+  - "lp user {player} group set {rank}"
+  - "pex user {player} group set {rank}"
+
+server-group: "survival"
