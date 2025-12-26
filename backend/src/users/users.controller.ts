@@ -89,18 +89,44 @@ export class UsersController {
     return this.usersService.findAll(query);
   }
 
-  @Get(':identifier')
-  @ApiOperation({ summary: 'Get a single user by ID or slug' })
-  findOne(@Param('identifier') identifier: string) {
-    this.logger.verbose(`[GET-ONE] 🔎 Fetching user with identifier: '${identifier}'`);
-    const idAsNumber = parseInt(identifier, 10);
-    const queryIdentifier = isNaN(idAsNumber) ? identifier : idAsNumber;
-    return this.usersService.findOne(queryIdentifier);
+  // All "me/" routes must be declared before ":identifier" route to avoid conflicts
+  @Get('me/cosmetics/:itemType')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get my owned cosmetic items of a specific type' })
+  getMyCosmetics(@Request() req, @Param('itemType') itemType: ShopItemType) {
+      return this.usersService.getOwnedCosmetics(req.user.userId, itemType);
   }
 
+  @Post('me/equip-frame')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Equip a profile frame' })
+  equipFrame(@Request() req, @Body('itemId') itemId: number | null) {
+      return this.usersService.equipProfileFrame(req.user.userId, itemId);
+  }
+
+  @Post('me/equip-animated-avatar')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Equip an animated avatar' })
+  equipAnimatedAvatar(@Request() req, @Body('itemId') itemId: number | null) {
+      return this.usersService.equipAnimatedAvatar(req.user.userId, itemId);
+  }
+
+  @Post('me/equip-animated-banner')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Equip an animated banner' })
+  equipAnimatedBanner(@Request() req, @Body('itemId') itemId: number | null) {
+      return this.usersService.equipAnimatedBanner(req.user.userId, itemId);
+  }
 
   @Post('me/unlink-minecraft')
-   @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Unlink Minecraft account from my profile' })
@@ -108,6 +134,23 @@ export class UsersController {
     const userId = req.user.userId;
     this.logger.log(`[UNLINK-MC] 🔗 User ID: ${userId} is unlinking their Minecraft account.`);
     return this.usersService.unlinkMinecraftAccount(userId);
+  }
+
+  @Patch('me/tags')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "Update current user's tags" })
+  updateMyTags(@Request() req, @Body() updateUserTagsDto: UpdateUserTagsDto) {
+    return this.usersService.updateUserTags(req.user.userId, updateUserTagsDto.tagIds);
+  }
+
+  @Get(':identifier')
+  @ApiOperation({ summary: 'Get a single user by ID or slug' })
+  findOne(@Param('identifier') identifier: string) {
+    this.logger.verbose(`[GET-ONE] 🔎 Fetching user with identifier: '${identifier}'`);
+    const idAsNumber = parseInt(identifier, 10);
+    const queryIdentifier = isNaN(idAsNumber) ? identifier : idAsNumber;
+    return this.usersService.findOne(queryIdentifier);
   }
 
   @Get(':identifier/posts')
@@ -151,30 +194,5 @@ export class UsersController {
       throw new NotFoundException('Not following');
     }
     return;
-  }
-
-  @Get('me/cosmetics/:itemType')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Get my owned cosmetic items of a specific type' })
-  getMyCosmetics(@Request() req, @Param('itemType') itemType: ShopItemType) {
-      return this.usersService.getOwnedCosmetics(req.user.userId, itemType);
-  }
-
-  @Post('me/equip-frame')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Equip a profile frame' })
-  equipFrame(@Request() req, @Body('itemId') itemId: number | null) {
-      return this.usersService.equipProfileFrame(req.user.userId, itemId);
-  }
-
-  @Patch('me/tags')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: "Update current user's tags" })
-  updateMyTags(@Request() req, @Body() updateUserTagsDto: UpdateUserTagsDto) {
-    return this.usersService.updateUserTags(req.user.userId, updateUserTagsDto.tagIds);
   }
 }

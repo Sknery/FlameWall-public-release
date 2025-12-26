@@ -18,7 +18,7 @@ import { Loader2, Terminal, Edit, Image as ImageIcon, Save, User } from 'lucide-
 
 import { constructImageUrl } from '../utils/url';
 import { useBreadcrumbs } from '@/context/BreadcrumbsContext';
-import ImageCropperModal from '../components/ImageCropperModal';
+import ShopImageCropperModal from '../components/ShopImageCropperModal';
 import VerifiedIcons from '../components/VerifiedIcons';
 import { hexToHslString } from '../utils/colors';
 import PlayerCard from '../components/PlayerCard';
@@ -160,6 +160,7 @@ function AdminCreateItemPage() {
 
     const [cropperOpen, setCropperOpen] = useState(false);
     const [imageToCrop, setImageToCrop] = useState(null);
+    const [originalFileForCrop, setOriginalFileForCrop] = useState(null);
 
     useEffect(() => {
         setBreadcrumbs([
@@ -186,30 +187,61 @@ function AdminCreateItemPage() {
         const file = event.target.files[0];
         if (!file) return;
 
-        // For animated avatars and banners, skip cropping to preserve animation
-        const isAnimatedItem = formData.item_type === 'ANIMATED_AVATAR' || formData.item_type === 'ANIMATED_BANNER';
-        const isAnimatedFormat = file.type === 'image/gif' || 
-                                  file.type === 'image/avif' || 
-                                  file.name.toLowerCase().endsWith('.gif') ||
-                                  file.name.toLowerCase().endsWith('.avif');
+        const isAnimatedAvatar = formData.item_type === 'ANIMATED_AVATAR';
+        const isAnimatedBanner = formData.item_type === 'ANIMATED_BANNER';
+        const isProfileFrame = formData.item_type === 'PROFILE_FRAME';
+        // More robust file type detection
+        const fileTypeLower = (file.type || '').toLowerCase();
+        const fileNameLower = file.name.toLowerCase();
+        const isGif = fileTypeLower === 'image/gif' || fileNameLower.endsWith('.gif');
+        const isAvif = fileTypeLower === 'image/avif' || fileNameLower.endsWith('.avif') || fileNameLower.includes('.avif');
         
-        if (isAnimatedItem && isAnimatedFormat) {
-            // Direct upload for animated items - no cropping to preserve animation
-            const previewUrl = URL.createObjectURL(file);
-            setImageFile(file);
-            setImagePreview(previewUrl);
+        console.log('File type detection:', { 
+            fileType: file.type, 
+            fileName: file.name, 
+            fileTypeLower, 
+            fileNameLower, 
+            isGif, 
+            isAvif 
+        });
+        
+        // Profile frames always use cropper, regardless of format (including AVIF)
+        if (isProfileFrame) {
+            console.log('Profile frame detected, opening cropper for file:', file.name, 'type:', file.type);
+            setOriginalFileForCrop(file);
+            const reader = new FileReader();
+            reader.addEventListener('load', () => { 
+                console.log('FileReader loaded for profile frame');
+                setImageToCrop(reader.result?.toString() || ''); 
+                setCropperOpen(true);
+                console.log('Cropper should be open now');
+            });
+            reader.addEventListener('error', (error) => {
+                console.error('FileReader error:', error);
+                toast.error('Failed to read image file. Please try again.');
+            });
+            reader.readAsDataURL(file);
             event.target.value = null;
             return;
         }
         
-        // For animated items with non-animated files, show warning
-        if (isAnimatedItem && !isAnimatedFormat) {
-            toast.error('Animated avatars and banners must be GIF or AVIF files to preserve animation.');
+        // For animated avatars with non-animated files, show warning
+        if (isAnimatedAvatar && !isGif && !isAvif) {
+            toast.error('Animated avatars must be GIF or AVIF files to preserve animation.');
+            event.target.value = null;
+            return;
+        }
+        
+        // For animated banners with non-animated files, show warning
+        if (isAnimatedBanner && !isGif && !isAvif) {
+            toast.error('Animated banners must be GIF or AVIF files to preserve animation.');
             event.target.value = null;
             return;
         }
 
+        // For animated banners with GIF, use cropper (can preserve animation)
         // For other images, use cropper
+        setOriginalFileForCrop(file); // Save original file to preserve format
         const reader = new FileReader();
         reader.addEventListener('load', () => { setImageToCrop(reader.result?.toString() || ''); setCropperOpen(true); });
         reader.readAsDataURL(file);
@@ -306,7 +338,17 @@ function AdminCreateItemPage() {
                     </div>
                 </div>
             </form>
-            <ImageCropperModal open={cropperOpen} onClose={() => setCropperOpen(false)} imageSrc={imageToCrop} onCropComplete={handleCropComplete} aspect={1}/>
+            <ShopImageCropperModal 
+                open={cropperOpen} 
+                onClose={() => {
+                    setCropperOpen(false);
+                    setOriginalFileForCrop(null);
+                }} 
+                imageSrc={imageToCrop} 
+                originalFile={originalFileForCrop}
+                onCropComplete={handleCropComplete} 
+                aspect={formData.item_type === 'ANIMATED_BANNER' ? 16/5 : 1}
+            />
         </>
     );
 }

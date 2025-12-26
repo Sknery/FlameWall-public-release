@@ -116,8 +116,8 @@ function UserProfileSidebar({ user, children }) {
                             <div className="p-4 pb-0 group relative">
                                 <div
                                     className="w-full aspect-[16/5] bg-cover bg-center bg-secondary rounded-lg cursor-zoom-in transition-opacity hover:opacity-90"
-                                    style={{ backgroundImage: `url(${constructImageUrl(user.banner_url) || '/placeholders/banner_placeholder.png'})` }}
-                                    onClick={() => handleImageClick(user.banner_url || '/placeholders/banner_placeholder.png')}
+                                    style={{ backgroundImage: `url(${constructImageUrl(user.animated_banner?.image_url || user.banner_url) || '/placeholders/banner_placeholder.png'})` }}
+                                    onClick={() => handleImageClick(user.animated_banner?.image_url || user.banner_url || '/placeholders/banner_placeholder.png')}
                                 >
                                      {}
                                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 pointer-events-none">
@@ -127,10 +127,10 @@ function UserProfileSidebar({ user, children }) {
                             </div>
 
                             <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-[25%] max-w-[80px] min-w-[64px] aspect-square group cursor-zoom-in"
-                                 onClick={() => handleImageClick(user.pfp_url)}
+                                 onClick={() => handleImageClick(user.animated_avatar?.image_url || user.pfp_url)}
                             >
                                 <Avatar className="h-full w-full aspect-square border-4 border-background transition-transform group-hover:scale-105 relative z-20">
-                                    <AvatarImage src={constructImageUrl(user.pfp_url)} />
+                                    <AvatarImage src={constructImageUrl(user.animated_avatar?.image_url || user.pfp_url)} />
                                     <AvatarFallback>
                                         <User className="h-[60%] w-[60%]" />
                                     </AvatarFallback>

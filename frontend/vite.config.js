@@ -51,6 +51,9 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  optimizeDeps: {
+    include: ['gif.js'],
+  },
 
   test: {
     globals: true,

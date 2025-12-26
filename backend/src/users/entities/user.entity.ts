@@ -133,6 +133,28 @@ export class User {
   @JoinColumn({ name: 'profile_frame_id' })
   profile_frame: ShopItem | null;
 
+  @Column({ name: 'animated_avatar_id', nullable: true })
+  animated_avatar_id: number | null;
+
+  @ManyToOne(() => ShopItem, {
+    nullable: true,
+    eager: true,
+    onDelete: 'SET NULL'
+  })
+  @JoinColumn({ name: 'animated_avatar_id' })
+  animated_avatar: ShopItem | null;
+
+  @Column({ name: 'animated_banner_id', nullable: true })
+  animated_banner_id: number | null;
+
+  @ManyToOne(() => ShopItem, {
+    nullable: true,
+    eager: true,
+    onDelete: 'SET NULL'
+  })
+  @JoinColumn({ name: 'animated_banner_id' })
+  animated_banner: ShopItem | null;
+
   @ManyToMany(() => Tag, (tag) => tag.users, { eager: true, cascade: true })
   @JoinTable({
     name: 'user_tags',

@@ -144,6 +144,8 @@ function SettingsPage({ isWidgetMode = false }) {
     const [cropType, setCropType] = useState('avatar');
 
     const [ownedFrames, setOwnedFrames] = useState([]);
+    const [ownedAnimatedAvatars, setOwnedAnimatedAvatars] = useState([]);
+    const [ownedAnimatedBanners, setOwnedAnimatedBanners] = useState([]);
     const [isEquipping, setIsEquipping] = useState(false);
 
     const { subscribe, isSubscribed, error: pushError } = usePushNotifications();
@@ -184,12 +186,16 @@ function SettingsPage({ isWidgetMode = false }) {
         const fetchPageData = async () => {
             if (!authToken) return;
             try {
-                const [tagsRes, framesRes] = await Promise.all([
+                const [tagsRes, framesRes, avatarsRes, bannersRes] = await Promise.all([
                     axios.get('/api/tags'),
-                    axios.get('/api/users/me/cosmetics/PROFILE_FRAME', { headers: { Authorization: `Bearer ${authToken}` } })
+                    axios.get('/api/users/me/cosmetics/PROFILE_FRAME', { headers: { Authorization: `Bearer ${authToken}` } }),
+                    axios.get('/api/users/me/cosmetics/ANIMATED_AVATAR', { headers: { Authorization: `Bearer ${authToken}` } }),
+                    axios.get('/api/users/me/cosmetics/ANIMATED_BANNER', { headers: { Authorization: `Bearer ${authToken}` } })
                 ]);
                 setAvailableTags(tagsRes.data);
                 setOwnedFrames(framesRes.data);
+                setOwnedAnimatedAvatars(avatarsRes.data);
+                setOwnedAnimatedBanners(bannersRes.data);
             } catch (err) {
                 console.error("Failed to load page data:", err);
                 toast.error("Could not load some page data.");
@@ -308,6 +314,40 @@ function SettingsPage({ isWidgetMode = false }) {
             toast.success(itemId ? 'Frame equipped!' : 'Frame unequipped.');
         } catch (err) {
             toast.error(err.response?.data?.message || 'Failed to equip frame.');
+        } finally {
+            setIsEquipping(false);
+        }
+    };
+
+    const handleEquipAnimatedAvatar = async (itemId) => {
+        setIsEquipping(true);
+        try {
+            const response = await axios.post('/api/users/me/equip-animated-avatar',
+                { itemId },
+                { headers: { Authorization: `Bearer ${authToken}` } }
+            );
+            updateAuthToken(response.data.access_token);
+            await refreshUser();
+            toast.success(itemId ? 'Animated avatar equipped!' : 'Animated avatar unequipped.');
+        } catch (err) {
+            toast.error(err.response?.data?.message || 'Failed to equip animated avatar.');
+        } finally {
+            setIsEquipping(false);
+        }
+    };
+
+    const handleEquipAnimatedBanner = async (itemId) => {
+        setIsEquipping(true);
+        try {
+            const response = await axios.post('/api/users/me/equip-animated-banner',
+                { itemId },
+                { headers: { Authorization: `Bearer ${authToken}` } }
+            );
+            updateAuthToken(response.data.access_token);
+            await refreshUser();
+            toast.success(itemId ? 'Animated banner equipped!' : 'Animated banner unequipped.');
+        } catch (err) {
+            toast.error(err.response?.data?.message || 'Failed to equip animated banner.');
         } finally {
             setIsEquipping(false);
         }
@@ -504,31 +544,102 @@ function SettingsPage({ isWidgetMode = false }) {
                     <div className="lg:col-span-5 space-y-6">
                         <SettingsSection
                             title="Appearance"
-                            description="Customize your profile frame."
+                            description="Customize your profile cosmetics."
                         >
-                            <div className="flex flex-wrap gap-3">
-                                <TooltipProvider>
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <button type="button" onClick={() => handleEquipFrame(null)} className={cn("h-14 w-14 rounded-xl border-2 flex items-center justify-center transition-all hover:scale-105", !user.profile_frame ? "border-primary bg-primary/10" : "border-muted bg-muted/50")} disabled={isEquipping}>
-                                                <X className="h-5 w-5 text-muted-foreground" />
-                                            </button>
-                                        </TooltipTrigger>
-                                        <TooltipContent><p>No Frame</p></TooltipContent>
-                                    </Tooltip>
-                                </TooltipProvider>
-                                {ownedFrames.map(frame => (
-                                    <TooltipProvider key={frame.item_id}>
-                                        <Tooltip>
-                                            <TooltipTrigger asChild>
-                                                <button type="button" onClick={() => handleEquipFrame(frame.item_id)} className={cn("h-14 w-14 rounded-xl border-2 relative transition-all hover:scale-105", user.profile_frame_id === frame.item_id ? "border-primary ring-2 ring-primary/20" : "border-transparent")} style={{ backgroundColor: frame.cosmetic_data?.color }} disabled={isEquipping}>
-                                                    {user.profile_frame_id === frame.item_id && <div className="absolute -top-2 -right-2 bg-primary text-primary-foreground rounded-full p-0.5"><CheckCircle className="h-3 w-3" /></div>}
-                                                </button>
-                                            </TooltipTrigger>
-                                            <TooltipContent><p>{frame.name}</p></TooltipContent>
-                                        </Tooltip>
-                                    </TooltipProvider>
-                                ))}
+                            <div className="space-y-6">
+                                <div>
+                                    <Label className="text-sm font-medium mb-3 block">Profile Frames</Label>
+                                    <div className="flex flex-wrap gap-3">
+                                        <TooltipProvider>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <button type="button" onClick={() => handleEquipFrame(null)} className={cn("h-14 w-14 rounded-xl border-2 flex items-center justify-center transition-all hover:scale-105", !user.profile_frame ? "border-primary bg-primary/10" : "border-muted bg-muted/50")} disabled={isEquipping}>
+                                                        <X className="h-5 w-5 text-muted-foreground" />
+                                                    </button>
+                                                </TooltipTrigger>
+                                                <TooltipContent><p>No Frame</p></TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
+                                        {ownedFrames.map(frame => (
+                                            <TooltipProvider key={frame.item_id}>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <button type="button" onClick={() => handleEquipFrame(frame.item_id)} className={cn("h-14 w-14 rounded-xl border-2 relative transition-all hover:scale-105", user.profile_frame_id === frame.item_id ? "border-primary ring-2 ring-primary/20" : "border-transparent")} style={{ backgroundColor: frame.cosmetic_data?.color }} disabled={isEquipping}>
+                                                            {user.profile_frame_id === frame.item_id && <div className="absolute -top-2 -right-2 bg-primary text-primary-foreground rounded-full p-0.5"><CheckCircle className="h-3 w-3" /></div>}
+                                                        </button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent><p>{frame.name}</p></TooltipContent>
+                                                </Tooltip>
+                                            </TooltipProvider>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <Separator />
+
+                                <div>
+                                    <Label className="text-sm font-medium mb-3 block">Animated Avatars</Label>
+                                    <div className="flex flex-wrap gap-3">
+                                        <TooltipProvider>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <button type="button" onClick={() => handleEquipAnimatedAvatar(null)} className={cn("h-14 w-14 rounded-xl border-2 flex items-center justify-center transition-all hover:scale-105", !user.animated_avatar ? "border-primary bg-primary/10" : "border-muted bg-muted/50")} disabled={isEquipping}>
+                                                        <X className="h-5 w-5 text-muted-foreground" />
+                                                    </button>
+                                                </TooltipTrigger>
+                                                <TooltipContent><p>Default Avatar</p></TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
+                                        {ownedAnimatedAvatars.map(avatar => (
+                                            <TooltipProvider key={avatar.item_id}>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <button type="button" onClick={() => handleEquipAnimatedAvatar(avatar.item_id)} className={cn("h-14 w-14 rounded-xl border-2 relative overflow-hidden transition-all hover:scale-105", user.animated_avatar_id === avatar.item_id ? "border-primary ring-2 ring-primary/20" : "border-transparent")} disabled={isEquipping}>
+                                                            {avatar.image_url && (
+                                                                <img src={constructImageUrl(avatar.image_url)} alt={avatar.name} className="w-full h-full object-cover" />
+                                                            )}
+                                                            {user.animated_avatar_id === avatar.item_id && <div className="absolute -top-2 -right-2 bg-primary text-primary-foreground rounded-full p-0.5"><CheckCircle className="h-3 w-3" /></div>}
+                                                        </button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent><p>{avatar.name}</p></TooltipContent>
+                                                </Tooltip>
+                                            </TooltipProvider>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <Separator />
+
+                                <div>
+                                    <Label className="text-sm font-medium mb-3 block">Animated Banners</Label>
+                                    <div className="flex flex-wrap gap-3">
+                                        <TooltipProvider>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <button type="button" onClick={() => handleEquipAnimatedBanner(null)} className={cn("h-14 w-14 rounded-xl border-2 flex items-center justify-center transition-all hover:scale-105", !user.animated_banner ? "border-primary bg-primary/10" : "border-muted bg-muted/50")} disabled={isEquipping}>
+                                                        <X className="h-5 w-5 text-muted-foreground" />
+                                                    </button>
+                                                </TooltipTrigger>
+                                                <TooltipContent><p>Default Banner</p></TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
+                                        {ownedAnimatedBanners.map(banner => (
+                                            <TooltipProvider key={banner.item_id}>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <button type="button" onClick={() => handleEquipAnimatedBanner(banner.item_id)} className={cn("h-14 w-14 rounded-xl border-2 relative overflow-hidden transition-all hover:scale-105 aspect-[16/5]", user.animated_banner_id === banner.item_id ? "border-primary ring-2 ring-primary/20" : "border-transparent")} disabled={isEquipping}>
+                                                            {banner.image_url && (
+                                                                <img src={constructImageUrl(banner.image_url)} alt={banner.name} className="w-full h-full object-cover" />
+                                                            )}
+                                                            {user.animated_banner_id === banner.item_id && <div className="absolute -top-2 -right-2 bg-primary text-primary-foreground rounded-full p-0.5"><CheckCircle className="h-3 w-3" /></div>}
+                                                        </button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent><p>{banner.name}</p></TooltipContent>
+                                                </Tooltip>
+                                            </TooltipProvider>
+                                        ))}
+                                    </div>
+                                </div>
                             </div>
                         </SettingsSection>
 

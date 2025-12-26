@@ -25,11 +25,11 @@ const PlayerCard = ({
 }) => {
     const displayUser = {
         ...user,
-        pfp_url: customAvatarUrl || user.pfp_url,
-        banner_url: customBannerUrl || user.banner_url,
+        pfp_url: customAvatarUrl || (user.animated_avatar?.image_url) || user.pfp_url,
+        banner_url: customBannerUrl || (user.animated_banner?.image_url) || user.banner_url,
     };
 
-    const frameColor = customFrameColor;
+    const frameColor = customFrameColor || (user.profile_frame?.cosmetic_data?.color);
     const lightFrameColor = frameColor ? lightenHexColor(frameColor, 60) : null;
 
     const cardContent = (

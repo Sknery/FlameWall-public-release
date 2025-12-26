@@ -169,7 +169,7 @@ export class UsersService implements OnModuleInit {
   }
 
   async updateProfile(userId: number, updateUserDto: UpdateUserDto): Promise<{ user: PublicUser, access_token: string }> {
-    const user = await this.usersRepository.findOne({ where: { id: userId }, relations: ['rank', 'clanMembership', 'clanMembership.clan', 'clanMembership.role', 'tags', 'profile_frame'] });
+    const user = await this.usersRepository.findOne({ where: { id: userId }, relations: ['rank', 'clanMembership', 'clanMembership.clan', 'clanMembership.role', 'tags', 'profile_frame', 'animated_avatar', 'animated_banner'] });
     if (!user) {
       throw new NotFoundException(`User with ID ${userId} not found.`);
     }
@@ -319,6 +319,9 @@ export class UsersService implements OnModuleInit {
       .leftJoinAndSelect('user.rank', 'rank')
       .leftJoinAndSelect('user.clanMembership', 'clanMembership')
       .leftJoinAndSelect('clanMembership.clan', 'clan')
+      .leftJoinAndSelect('user.profile_frame', 'profile_frame')
+      .leftJoinAndSelect('user.animated_avatar', 'animated_avatar')
+      .leftJoinAndSelect('user.animated_banner', 'animated_banner')
       .leftJoinAndSelect('clanMembership.role', 'clanRole')
       .leftJoinAndSelect('user.tags', 'tag');
 
@@ -367,6 +370,8 @@ export class UsersService implements OnModuleInit {
       .leftJoinAndSelect('user.clanMembership', 'clanMembership')
       .leftJoinAndSelect('clanMembership.clan', 'clan')
       .leftJoinAndSelect('user.profile_frame', 'profile_frame')
+      .leftJoinAndSelect('user.animated_avatar', 'animated_avatar')
+      .leftJoinAndSelect('user.animated_banner', 'animated_banner')
       .leftJoinAndSelect('clanMembership.role', 'clanRole')
       .leftJoinAndSelect('user.tags', 'tags');
 
@@ -390,6 +395,8 @@ export class UsersService implements OnModuleInit {
     return this.usersRepository.createQueryBuilder("user")
       .leftJoinAndSelect('user.rank', 'rank')
       .leftJoinAndSelect('user.profile_frame', 'profile_frame')
+      .leftJoinAndSelect('user.animated_avatar', 'animated_avatar')
+      .leftJoinAndSelect('user.animated_banner', 'animated_banner')
       .leftJoinAndSelect('user.clanMembership', 'clanMembership')
       .leftJoinAndSelect('clanMembership.clan', 'clan')
       .leftJoinAndSelect('clanMembership.role', 'clanRole')
@@ -423,6 +430,60 @@ export class UsersService implements OnModuleInit {
     }
 
     await this.usersRepository.update(userId, { profile_frame_id: itemIdToEquip });
+
+    const finalUser = await this.findOne(userId);
+    if (!finalUser) {
+      throw new NotFoundException('User not found after update.');
+    }
+
+    const jwtTokenPayload = {
+      username: finalUser.username,
+      sub: finalUser.id,
+      rank: finalUser.rank,
+      clanMembership: finalUser.clanMembership,
+    };
+    const newAccessToken = this.jwtService.sign(jwtTokenPayload);
+
+    return { user: finalUser, access_token: newAccessToken };
+  }
+
+  async equipAnimatedAvatar(userId: number, itemIdToEquip: number | null): Promise<{ user: PublicUser, access_token: string }> {
+    if (itemIdToEquip !== null) {
+      const ownedAvatars = await this.getOwnedCosmetics(userId, ShopItemType.ANIMATED_AVATAR);
+      const hasItem = ownedAvatars.some(item => item.item_id === itemIdToEquip);
+      if (!hasItem) {
+        throw new ForbiddenException("You do not own this animated avatar.");
+      }
+    }
+
+    await this.usersRepository.update(userId, { animated_avatar_id: itemIdToEquip });
+
+    const finalUser = await this.findOne(userId);
+    if (!finalUser) {
+      throw new NotFoundException('User not found after update.');
+    }
+
+    const jwtTokenPayload = {
+      username: finalUser.username,
+      sub: finalUser.id,
+      rank: finalUser.rank,
+      clanMembership: finalUser.clanMembership,
+    };
+    const newAccessToken = this.jwtService.sign(jwtTokenPayload);
+
+    return { user: finalUser, access_token: newAccessToken };
+  }
+
+  async equipAnimatedBanner(userId: number, itemIdToEquip: number | null): Promise<{ user: PublicUser, access_token: string }> {
+    if (itemIdToEquip !== null) {
+      const ownedBanners = await this.getOwnedCosmetics(userId, ShopItemType.ANIMATED_BANNER);
+      const hasItem = ownedBanners.some(item => item.item_id === itemIdToEquip);
+      if (!hasItem) {
+        throw new ForbiddenException("You do not own this animated banner.");
+      }
+    }
+
+    await this.usersRepository.update(userId, { animated_banner_id: itemIdToEquip });
 
     const finalUser = await this.findOne(userId);
     if (!finalUser) {
