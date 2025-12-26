@@ -198,4 +198,200 @@ export class UploadsController {
         const url = await this.processAndSaveImage(file, 'clans', { width: 1200, height: 400, fit: 'cover' });
         return { url };
     }
+
+    @Post('media/crop-image')
+    @UseGuards(JwtAuthGuard)
+    @UseInterceptors(FileInterceptor('file', { storage: memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } }))
+    @ApiConsumes('multipart/form-data')
+    @ApiBody({ 
+        schema: { 
+            type: 'object', 
+            properties: { 
+                file: { type: 'string', format: 'binary' },
+                x: { type: 'number' },
+                y: { type: 'number' },
+                width: { type: 'number' },
+                height: { type: 'number' },
+                imageWidth: { type: 'number' },
+                imageHeight: { type: 'number' }
+            } 
+        } 
+    })
+    async cropImage(
+        @UploadedFile() file: Express.Multer.File,
+        @Request() req: any
+    ) {
+        if (!file) throw new BadRequestException('File is required');
+        
+        // Log received data for debugging
+        this.logger.log(`Crop request - body keys: ${Object.keys(req.body || {}).join(', ')}, file: ${file.originalname}, type: ${file.mimetype}`);
+        this.logger.log(`Crop request - body values: ${JSON.stringify(req.body)}`);
+        
+        // Parse crop parameters from form data
+        // In multipart/form-data with multer, values come as strings in req.body
+        const getParam = (key: string): string => {
+            const value = req.body?.[key];
+            if (Array.isArray(value)) return value[0];
+            return value || '0';
+        };
+        
+        const cropX = parseFloat(getParam('x'));
+        const cropY = parseFloat(getParam('y'));
+        const cropWidth = parseFloat(getParam('width'));
+        const cropHeight = parseFloat(getParam('height'));
+        const imageWidth = parseFloat(getParam('imageWidth'));
+        const imageHeight = parseFloat(getParam('imageHeight'));
+
+        this.logger.log(`Parsed crop params: x=${cropX}, y=${cropY}, width=${cropWidth}, height=${cropHeight}, imgW=${imageWidth}, imgH=${imageHeight}`);
+
+        // Validate parameters
+        if (isNaN(cropX) || isNaN(cropY) || isNaN(cropWidth) || isNaN(cropHeight) || 
+            isNaN(imageWidth) || isNaN(imageHeight) || 
+            cropWidth <= 0 || cropHeight <= 0 || imageWidth <= 0 || imageHeight <= 0) {
+            const errorMsg = `Invalid crop parameters: x=${cropX}, y=${cropY}, width=${cropWidth}, height=${cropHeight}, imgW=${imageWidth}, imgH=${imageHeight}. Body: ${JSON.stringify(req.body)}`;
+            this.logger.error(errorMsg);
+            throw new BadRequestException(errorMsg);
+        }
+        
+        // Check if values are already in pixels (if width > 100, assume pixels)
+        // or in percentages (if width <= 100, assume percentages)
+        const isPixels = cropWidth > 100 || cropHeight > 100;
+        
+        let clampedCropX, clampedCropY, clampedCropWidth, clampedCropHeight;
+        
+        if (isPixels) {
+            // Values are already in pixels, clamp to image bounds
+            clampedCropX = Math.max(0, Math.min(imageWidth - 1, cropX));
+            clampedCropY = Math.max(0, Math.min(imageHeight - 1, cropY));
+            clampedCropWidth = Math.max(1, Math.min(imageWidth - clampedCropX, cropWidth));
+            clampedCropHeight = Math.max(1, Math.min(imageHeight - clampedCropY, cropHeight));
+            this.logger.log(`Crop parameters are in pixels, clamping to bounds`);
+        } else {
+            // Values are in percentages, clamp to 0-100%
+            clampedCropX = Math.max(0, Math.min(100, cropX));
+            clampedCropY = Math.max(0, Math.min(100, cropY));
+            clampedCropWidth = Math.max(0, Math.min(100, cropWidth));
+            clampedCropHeight = Math.max(0, Math.min(100, cropHeight));
+            
+            if (clampedCropX !== cropX || clampedCropY !== cropY || clampedCropWidth !== cropWidth || clampedCropHeight !== cropHeight) {
+                this.logger.warn(`Crop parameters clamped: x=${cropX}->${clampedCropX}, y=${cropY}->${clampedCropY}, width=${cropWidth}->${clampedCropWidth}, height=${cropHeight}->${clampedCropHeight}`);
+            }
+        }
+
+        const isAnimated = file.mimetype === 'image/gif' || file.mimetype === 'image/avif';
+        
+        try {
+            const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+            const ext = extname(file.originalname) || (file.mimetype === 'image/gif' ? '.gif' : 
+                                                       file.mimetype === 'image/avif' ? '.avif' : '.png');
+            const filename = `${uniqueSuffix}${ext}`;
+            const filepath = join(this.uploadBaseDir, 'shop', filename);
+
+            // Convert to pixels (either already in pixels or convert from percentages)
+            // IMPORTANT: sharp.extract() requires INTEGER values, so we must round all coordinates
+            let pixelX, pixelY, pixelWidth, pixelHeight;
+            
+            if (isPixels) {
+                // Already in pixels, round to integers and clamp to image bounds
+                pixelX = Math.max(0, Math.min(imageWidth - 1, Math.round(clampedCropX)));
+                pixelY = Math.max(0, Math.min(imageHeight - 1, Math.round(clampedCropY)));
+                pixelWidth = Math.max(1, Math.min(imageWidth - pixelX, Math.round(clampedCropWidth)));
+                pixelHeight = Math.max(1, Math.min(imageHeight - pixelY, Math.round(clampedCropHeight)));
+            } else {
+                // Convert from percentages to pixels and round to integers
+                pixelX = Math.max(0, Math.min(imageWidth - 1, Math.round((clampedCropX / 100) * imageWidth)));
+                pixelY = Math.max(0, Math.min(imageHeight - 1, Math.round((clampedCropY / 100) * imageHeight)));
+                pixelWidth = Math.max(1, Math.min(imageWidth - pixelX, Math.round((clampedCropWidth / 100) * imageWidth)));
+                pixelHeight = Math.max(1, Math.min(imageHeight - pixelY, Math.round((clampedCropHeight / 100) * imageHeight)));
+            }
+            
+            // Ensure minimum size
+            if (pixelWidth <= 0 || pixelHeight <= 0) {
+                throw new BadRequestException(`Invalid crop area: width=${pixelWidth}, height=${pixelHeight}. Crop area must be within image bounds.`);
+            }
+            
+            // Ensure all values are integers (sharp requires integers)
+            pixelX = Math.round(pixelX);
+            pixelY = Math.round(pixelY);
+            pixelWidth = Math.round(pixelWidth);
+            pixelHeight = Math.round(pixelHeight);
+            
+            // Final validation - ensure values are within bounds and are integers
+            pixelX = Math.max(0, Math.min(imageWidth - 1, pixelX));
+            pixelY = Math.max(0, Math.min(imageHeight - 1, pixelY));
+            pixelWidth = Math.max(1, Math.min(imageWidth - pixelX, pixelWidth));
+            pixelHeight = Math.max(1, Math.min(imageHeight - pixelY, pixelHeight));
+            
+            this.logger.log(`Final crop pixels (integers): x=${pixelX}, y=${pixelY}, width=${pixelWidth}, height=${pixelHeight} (image: ${imageWidth}x${imageHeight})`);
+
+            // For animated formats, use animated option to preserve all frames
+            let pipeline = sharp(file.buffer, { animated: isAnimated });
+
+            if (isAnimated) {
+                // For animated formats, use extract to crop while preserving animation
+                // The animated option ensures all frames are processed
+                // IMPORTANT: All values must be integers
+                pipeline = pipeline.extract({
+                    left: pixelX,
+                    top: pixelY,
+                    width: pixelWidth,
+                    height: pixelHeight
+                });
+                
+                // Explicitly set output format to preserve animation
+                if (file.mimetype === 'image/gif') {
+                    // GIF: preserve format
+                    pipeline = pipeline.gif();
+                    await pipeline.toFile(filepath);
+                    this.logger.log(`Cropped animated GIF saved to ${filepath}`);
+                    return { url: `/uploads/shop/${filename}` };
+                } else if (file.mimetype === 'image/avif') {
+                    // AVIF: Sharp does NOT support animated AVIF processing
+                    // According to Sharp documentation and GitHub issues, animated AVIF is not supported
+                    // We return the original file without cropping to preserve animation
+                    // GIF format is recommended for animated images that need cropping
+                    this.logger.warn('AVIF cropping skipped - Sharp does not support animated AVIF. Returning original file to preserve animation.');
+                    
+                    // Save original file as-is to preserve animation
+                    const ext = extname(file.originalname) || '.avif';
+                    const filename = `${uniqueSuffix}${ext}`;
+                    const filepath = join(this.uploadBaseDir, 'shop', filename);
+                    
+                    await fs.writeFile(filepath, file.buffer);
+                    this.logger.log(`Original AVIF file saved (no cropping) to ${filepath}`);
+                    
+                    return { 
+                        url: `/uploads/shop/${filename}`,
+                        warning: 'AVIF cropping is not supported. Original file used to preserve animation. For animated images that need cropping, please use GIF format.'
+                    };
+                }
+            } else {
+                // For static formats, use extract and convert to appropriate format
+                pipeline = pipeline.extract({
+                    left: pixelX,
+                    top: pixelY,
+                    width: pixelWidth,
+                    height: pixelHeight
+                });
+                
+                // Convert to WebP for better compression (except for PNG which should stay PNG)
+                if (file.mimetype !== 'image/png') {
+                    pipeline = pipeline.webp({ quality: 80 });
+                    const webpFilename = `${uniqueSuffix}.webp`;
+                    const webpFilepath = join(this.uploadBaseDir, 'shop', webpFilename);
+                    await pipeline.toFile(webpFilepath);
+                    this.logger.log(`Cropped image saved to ${webpFilepath}`);
+                    return { url: `/uploads/shop/${webpFilename}` };
+                } else {
+                    // PNG: preserve format
+                    await pipeline.toFile(filepath);
+                    this.logger.log(`Cropped PNG saved to ${filepath}`);
+                    return { url: `/uploads/shop/${filename}` };
+                }
+            }
+        } catch (error) {
+            this.logger.error('Error cropping image:', error);
+            throw new BadRequestException(`Failed to crop image: ${error.message}. The file might be corrupted or unsupported.`);
+        }
+    }
 }
