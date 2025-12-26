@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
@@ -18,6 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import ImageCropperModal from '../components/ImageCropperModal';
 import VerifiedIcons from '../components/VerifiedIcons';
 import { Separator } from '@/components/ui/separator';
+import PlayerCard from '../components/PlayerCard';
 
 
 const lightenHexColor = (hex, percent) => {
@@ -33,27 +34,77 @@ const lightenHexColor = (hex, percent) => {
 
 const ProfileFramePreview = ({ item, imagePreview }) => {
     const { user: currentUser } = useAuth();
-    const displayUser = currentUser || { username: 'YourName', pfp_url: null, banner_url: null, rank: { name: 'User', display_color: '#AAAAAA' } };
+    const displayUser = currentUser ? {
+        ...currentUser,
+        tags: currentUser.tags || [],
+    } : {
+        username: 'YourName',
+        pfp_url: '/placeholders/avatar_placeholder.png',
+        banner_url: '/placeholders/banner_placeholder.png',
+        rank: { name: 'User', display_color: '#AAAAAA' },
+        reputation_count: 123,
+        clanMembership: { clan: { name: 'YourClan' } },
+        first_login: new Date().toISOString(),
+        tags: [],
+    };
     const frameColor = item.cosmetic_data?.color || '#FF4D00';
-    const lightFrameColor = lightenHexColor(frameColor, 60);
 
     return (
-        <div className="relative rounded-xl overflow-hidden p-[2px] h-full flex flex-col">
-            <span className="absolute inset-[-1000%] animate-[spin_3s_linear_infinite]" style={{ background: `conic-gradient(from 90deg at 50% 50%, ${lightFrameColor} 0%, ${frameColor} 50%, ${lightFrameColor} 100%)` }}/>
-            <div className="relative z-10 bg-card rounded-[10px] h-full flex flex-col">
-                <CardContent className="flex flex-col items-center text-center p-6 pb-2 flex-grow">
-                    <div className="w-full aspect-[16/5] rounded-t-lg bg-cover bg-center" style={{ backgroundImage: `url(${constructImageUrl(displayUser.banner_url) || '/placeholders/banner_placeholder.png'})` }}/>
-                    <div className="w-[30%] -mt-[18%]"><Avatar className="h-full w-full aspect-square border-4 border-background"><AvatarImage src={constructImageUrl(displayUser.pfp_url)} /><AvatarFallback><User className="h-[60%] w-[60%]" /></AvatarFallback></Avatar></div>
-                    <h2 className="font-sans mt-4 flex items-center gap-2 text-xl font-bold">{displayUser.username}<VerifiedIcons user={displayUser} /></h2>
-                    <p className="text-sm font-semibold" style={{ color: displayUser.rank?.display_color }}>{displayUser.rank?.name}</p>
-                </CardContent>
-                <CardFooter className="p-4 pt-2 mt-auto flex-col items-stretch gap-2">
-                     <div className="w-full text-center"><h3 className="font-bold text-lg">{item.name || "Item Name"}</h3><p className="text-xs text-muted-foreground">{item.description || "Item description..."}</p></div>
-                    <Separator className="my-2" />
-                    <p className="text-xl font-bold text-center">{item.price || 0} <span className="text-sm font-medium text-muted-foreground">coins</span></p>
-                </CardFooter>
-            </div>
-        </div>
+        <PlayerCard
+            user={displayUser}
+            customFrameColor={frameColor}
+            disableLink={true}
+        />
+    );
+};
+
+const AnimatedAvatarPreview = ({ item, imagePreview }) => {
+    const { user: currentUser } = useAuth();
+    const displayUser = currentUser ? {
+        ...currentUser,
+        tags: currentUser.tags || [],
+    } : {
+        username: 'YourName',
+        pfp_url: '/placeholders/avatar_placeholder.png',
+        banner_url: '/placeholders/banner_placeholder.png',
+        rank: { name: 'User', display_color: '#AAAAAA' },
+        reputation_count: 123,
+        clanMembership: { clan: { name: 'YourClan' } },
+        first_login: new Date().toISOString(),
+        tags: [],
+    };
+
+    return (
+        <PlayerCard
+            user={displayUser}
+            customAvatarUrl={imagePreview}
+            disableLink={true}
+        />
+    );
+};
+
+const AnimatedBannerPreview = ({ item, imagePreview }) => {
+    const { user: currentUser } = useAuth();
+    const displayUser = currentUser ? {
+        ...currentUser,
+        tags: currentUser.tags || [],
+    } : {
+        username: 'YourName',
+        pfp_url: '/placeholders/avatar_placeholder.png',
+        banner_url: '/placeholders/banner_placeholder.png',
+        rank: { name: 'User', display_color: '#AAAAAA' },
+        reputation_count: 123,
+        clanMembership: { clan: { name: 'YourClan' } },
+        first_login: new Date().toISOString(),
+        tags: [],
+    };
+
+    return (
+        <PlayerCard
+            user={displayUser}
+            customBannerUrl={imagePreview}
+            disableLink={true}
+        />
     );
 };
 
@@ -79,6 +130,12 @@ const ItemCardPreview = ({ item, imagePreview }) => {
 const ItemPreviewCard = ({ item, imagePreview }) => {
     if (item.item_type === 'PROFILE_FRAME') {
         return <ProfileFramePreview item={item} imagePreview={imagePreview} />;
+    }
+    if (item.item_type === 'ANIMATED_AVATAR') {
+        return <AnimatedAvatarPreview item={item} imagePreview={imagePreview} />;
+    }
+    if (item.item_type === 'ANIMATED_BANNER') {
+        return <AnimatedBannerPreview item={item} imagePreview={imagePreview} />;
     }
     return <ItemCardPreview item={item} imagePreview={imagePreview} />;
 };
@@ -128,14 +185,48 @@ function AdminEditItemPage() {
         return () => setBreadcrumbs([]);
     }, [itemId, authToken, setBreadcrumbs]);
 
-    const handleChange = (e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
-    const handleCosmeticChange = (e) => setFormData(prev => ({...prev, cosmetic_data: { ...prev.cosmetic_data, [e.target.name]: e.target.value }}));
-    const handleSwitchChange = (checked) => setFormData(prev => ({ ...prev, is_active: checked }));
+    const handleChange = useCallback((e) => {
+        setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    }, []);
+    const handleCosmeticChange = useCallback((e) => {
+        setFormData(prev => ({...prev, cosmetic_data: { ...prev.cosmetic_data, [e.target.name]: e.target.value }}));
+    }, []);
+    const handleSwitchChange = useCallback((checked) => {
+        setFormData(prev => ({ ...prev, is_active: checked }));
+    }, []);
+
+    const handleItemTypeChange = useCallback((value) => {
+        setFormData(p => ({...p, item_type: value, cosmetic_data: {}}));
+    }, []);
 
     const handleFileChange = (event) => {
         const file = event.target.files[0];
         if (!file) return;
 
+        // For animated avatars and banners, skip cropping to preserve animation
+        const isAnimatedItem = formData.item_type === 'ANIMATED_AVATAR' || formData.item_type === 'ANIMATED_BANNER';
+        const isAnimatedFormat = file.type === 'image/gif' || 
+                                  file.type === 'image/avif' || 
+                                  file.name.toLowerCase().endsWith('.gif') ||
+                                  file.name.toLowerCase().endsWith('.avif');
+        
+        if (isAnimatedItem && isAnimatedFormat) {
+            // Direct upload for animated items - no cropping to preserve animation
+            const previewUrl = URL.createObjectURL(file);
+            setImageFile(file);
+            setImagePreview(previewUrl);
+            event.target.value = null;
+            return;
+        }
+        
+        // For animated items with non-animated files, show warning
+        if (isAnimatedItem && !isAnimatedFormat) {
+            toast.error('Animated avatars and banners must be GIF or AVIF files to preserve animation.');
+            event.target.value = null;
+            return;
+        }
+
+        // For other images, use cropper
         const reader = new FileReader();
         reader.addEventListener('load', () => {
             setImageToCrop(reader.result?.toString() || '');
@@ -216,18 +307,15 @@ function AdminEditItemPage() {
                                 </div>
                                 <div className="space-y-2">
                                     <Label>Item Type</Label>
-                                    <Select value={formData.item_type} onValueChange={(value) => setFormData(p => ({...p, item_type: value, cosmetic_data: {}}))}>
+                                    <Select value={formData.item_type} onValueChange={handleItemTypeChange}>
                                         <SelectTrigger><SelectValue/></SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="COMMAND">Command (e.g., Rank)</SelectItem>
                                             <SelectItem value="PROFILE_FRAME">Profile Card Frame</SelectItem>
-                                            <SelectItem value="AVATAR_FRAME" disabled>Avatar Frame (soon)</SelectItem>
+                                            <SelectItem value="ANIMATED_AVATAR">Animated Avatar</SelectItem>
+                                            <SelectItem value="ANIMATED_BANNER">Animated Banner</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
-                                {formData.item_type === 'COMMAND' && (
-                                    <div className="space-y-2"><Label>In-game Command</Label><Input name="ingame_command" value={formData.ingame_command || ''} onChange={handleChange} placeholder="lp user {username} parent set vip" required /></div>
-                                )}
                                 {formData.item_type === 'PROFILE_FRAME' && (
                                     <div className="space-y-2"><Label>Frame Color</Label><Input type="color" name="color" value={formData.cosmetic_data?.color || '#FF4D00'} onChange={handleCosmeticChange} className="p-1 h-10 w-20" /></div>
                                 )}

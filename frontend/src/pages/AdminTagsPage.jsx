@@ -78,11 +78,11 @@ function AdminTagsPage() {
         setIsModalOpen(true);
     };
 
-    const handleFormChange = (e) => {
+    const handleFormChange = useCallback((e) => {
         setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
-    };
+    }, []);
 
-    const handleFileChange = (event) => {
+    const handleFileChange = useCallback((event) => {
         const file = event.target.files[0];
         if (!file) return;
 
@@ -93,7 +93,7 @@ function AdminTagsPage() {
         });
         reader.readAsDataURL(file);
         event.target.value = null;
-    };
+    }, []);
 
     const handleCropComplete = (croppedImageBlob) => {
         if (!croppedImageBlob) {
@@ -215,7 +215,12 @@ function AdminTagsPage() {
             }
 
             <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-                <DialogContent className="sm:max-w-[425px]">
+                <DialogContent 
+                    className="sm:max-w-[425px]"
+                    onOpenAutoFocus={(e) => {
+                        e.preventDefault();
+                    }}
+                >
                     <form onSubmit={handleSubmit}>
                         <DialogHeader>
                             <DialogTitle>{editingTag ? 'Edit Tag' : 'Create New Tag'}</DialogTitle>

@@ -34,6 +34,10 @@ const BanUserModal = ({ isOpen, onClose, user, onConfirm, loading }) => {
     const [banReasons, setBanReasons] = useState([]);
     const [formData, setFormData] = useState({ reason: '', customReason: '', duration_hours: '' });
 
+    const handleFormChange = useCallback((field, value) => {
+        setFormData(prev => ({ ...prev, [field]: value }));
+    }, []);
+
     useEffect(() => {
         if (isOpen) {
             const fetchBanReasons = async () => {
@@ -64,7 +68,11 @@ const BanUserModal = ({ isOpen, onClose, user, onConfirm, loading }) => {
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent>
+            <DialogContent
+                onOpenAutoFocus={(e) => {
+                    e.preventDefault();
+                }}
+            >
                 <DialogHeader>
                     <DialogTitle>Ban User: {user?.username}</DialogTitle>
                     <DialogDescription>Select a reason and optional duration for the ban.</DialogDescription>
@@ -72,7 +80,7 @@ const BanUserModal = ({ isOpen, onClose, user, onConfirm, loading }) => {
                 <div className="py-4 space-y-4">
                     <div className="space-y-2">
                         <Label>Reason</Label>
-                        <Select value={formData.reason} onValueChange={(val) => setFormData(p => ({ ...p, reason: val }))}>
+                        <Select value={formData.reason} onValueChange={(val) => handleFormChange('reason', val)}>
                             <SelectTrigger><SelectValue placeholder="Select a preset reason..." /></SelectTrigger>
                             <SelectContent>
                                 {banReasons.map(r => <SelectItem key={r.id} value={r.reason}>{r.reason}</SelectItem>)}
@@ -83,12 +91,12 @@ const BanUserModal = ({ isOpen, onClose, user, onConfirm, loading }) => {
                     {formData.reason === 'custom' && (
                         <div className="space-y-2">
                             <Label>Custom Reason</Label>
-                            <Textarea value={formData.customReason} onChange={(e) => setFormData(p => ({ ...p, customReason: e.target.value }))} />
+                            <Textarea value={formData.customReason} onChange={(e) => handleFormChange('customReason', e.target.value)} />
                         </div>
                     )}
                     <div className="space-y-2">
                         <Label>Duration (in hours)</Label>
-                        <Input type="number" placeholder="Leave empty for permanent" value={formData.duration_hours} onChange={(e) => setFormData(p => ({ ...p, duration_hours: e.target.value }))} />
+                        <Input type="number" placeholder="Leave empty for permanent" value={formData.duration_hours} onChange={(e) => handleFormChange('duration_hours', e.target.value)} />
                     </div>
                 </div>
                 <DialogFooter>

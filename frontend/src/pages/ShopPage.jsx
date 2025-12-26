@@ -11,7 +11,7 @@ import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Loader2, Terminal, ShoppingCart, ThumbsUp, Shield, CalendarDays, User } from 'lucide-react';
+import { Loader2, Terminal, ShoppingCart, ThumbsUp, Shield, CalendarDays, User, ExternalLink } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
@@ -23,13 +23,17 @@ import PurchaseModal from '../components/PurchaseModal';
 import { listContainer, fadeInUp } from '../utils/animations';
 import { hexToHslString } from '../utils/colors';
 import VerifiedIcons from '../components/VerifiedIcons';
+import PlayerCard from '../components/PlayerCard';
 
 
 const ProfileFrameCard = ({ item, onPurchaseClick, isLoggedIn }) => {
     const navigate = useNavigate();
     const { user: currentUser } = useAuth();
 
-    const displayUser = currentUser || {
+    const displayUser = currentUser ? {
+        ...currentUser,
+        tags: currentUser.tags || [],
+    } : {
         username: 'YourName',
         description: 'Your cool description!',
         pfp_url: '/placeholders/avatar_placeholder.png',
@@ -38,74 +42,159 @@ const ProfileFrameCard = ({ item, onPurchaseClick, isLoggedIn }) => {
         reputation_count: 123,
         clanMembership: { clan: { name: 'YourClan' } },
         first_login: new Date().toISOString(),
+        tags: [],
     };
 
     const frameColor = item.cosmetic_data?.color || '#FF4D00';
-    const lightFrameColor = hexToHslString(frameColor) ? `hsl(${hexToHslString(frameColor).split(' ')[0]} 60% 70%)` : '#FFFFFF';
+
+    const handleCardClick = () => {
+        if (isLoggedIn) {
+            onPurchaseClick(item);
+        } else {
+            navigate('/login');
+        }
+    };
 
     return (
-        <div className="relative rounded-xl overflow-hidden p-[2px] h-full flex flex-col">
-            <span
-                className="absolute inset-[-1000%] animate-[spin_3s_linear_infinite]"
-                style={{ background: `conic-gradient(from 90deg at 50% 50%, ${lightFrameColor} 0%, ${frameColor} 50%, ${lightFrameColor} 100%)` }}
-            />
-            <div className="relative z-10 bg-card rounded-[10px] h-full flex flex-col">
-                <CardContent className="flex flex-col items-center text-center p-6 pb-2 flex-grow">
-                    <div
-                        className="w-full aspect-[16/5] rounded-t-lg bg-cover bg-center"
-                        style={{ backgroundImage: `url(${constructImageUrl(displayUser.banner_url)})` }}
-                    />
-                    <div className="w-[30%] -mt-[18%]">
-                        <Avatar className="h-full w-full aspect-square border-4 border-background">
-                            <AvatarImage src={constructImageUrl(displayUser.pfp_url)} />
-                            <AvatarFallback><User className="h-[60%] w-[60%]" /></AvatarFallback>
-                        </Avatar>
+        <TooltipProvider>
+            <Tooltip delayDuration={1000}>
+                <TooltipTrigger asChild>
+                    <div onClick={handleCardClick} className="cursor-pointer">
+                        <PlayerCard
+                            user={displayUser}
+                            customFrameColor={frameColor}
+                            disableLink={true}
+                        />
                     </div>
-                    <h2 className="font-sans mt-4 flex items-center gap-2 text-xl font-bold">
-                        {displayUser.username}
-                        <VerifiedIcons user={displayUser} />
-                    </h2>
-                    <p className="text-sm font-semibold" style={{ color: displayUser.rank?.display_color }}>
-                        {displayUser.rank?.name}
-                    </p>
-                </CardContent>
-                <CardFooter className="p-4 pt-2 mt-auto flex-col items-stretch gap-4">
-                    <div className="w-full text-center">
-                        <h3 className="font-bold text-lg">{item.name}</h3>
-                        <p className="text-xs text-muted-foreground">{item.description}</p>
+                </TooltipTrigger>
+                <TooltipContent>
+                    <div className="text-center">
+                        <p className="font-bold">{item.name}</p>
+                        <p className="text-sm text-muted-foreground">{item.description}</p>
+                        <p className="text-lg font-bold mt-1">{item.price} <span className="text-sm font-medium text-muted-foreground">coins</span></p>
                     </div>
-                    <Separator />
-                    <div className="flex justify-between items-center">
-                        <p className="text-xl font-bold">{item.price} <span className="text-sm font-medium text-muted-foreground">coins</span></p>
-                        {isLoggedIn ? (
-                            <Button onClick={() => onPurchaseClick(item)}>
-                                <ShoppingCart className="mr-2 h-4 w-4" /> Purchase
-                            </Button>
-                        ) : (
-                            <TooltipProvider>
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <Button onClick={() => navigate('/login')}>
-                                            <ShoppingCart className="mr-2 h-4 w-4" /> Purchase
-                                        </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent><p>You must be logged in to purchase items.</p></TooltipContent>
-                                </Tooltip>
-                            </TooltipProvider>
-                        )}
-                    </div>
-                </CardFooter>
-            </div>
-        </div>
+                </TooltipContent>
+            </Tooltip>
+        </TooltipProvider>
     );
 };
 
+
+const AnimatedAvatarCard = ({ item, onPurchaseClick, isLoggedIn }) => {
+    const navigate = useNavigate();
+    const { user: currentUser } = useAuth();
+
+    const displayUser = currentUser ? {
+        ...currentUser,
+        tags: currentUser.tags || [],
+    } : {
+        username: 'YourName',
+        description: 'Your cool description!',
+        pfp_url: '/placeholders/avatar_placeholder.png',
+        banner_url: '/placeholders/banner_placeholder.png',
+        rank: { name: 'User', display_color: '#AAAAAA' },
+        reputation_count: 123,
+        clanMembership: { clan: { name: 'YourClan' } },
+        first_login: new Date().toISOString(),
+        tags: [],
+    };
+
+    const handleCardClick = () => {
+        if (isLoggedIn) {
+            onPurchaseClick(item);
+        } else {
+            navigate('/login');
+        }
+    };
+
+    return (
+        <TooltipProvider>
+            <Tooltip delayDuration={1000}>
+                <TooltipTrigger asChild>
+                    <div onClick={handleCardClick} className="cursor-pointer">
+                        <PlayerCard
+                            user={displayUser}
+                            customAvatarUrl={item.image_url}
+                            disableLink={true}
+                        />
+                    </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                    <div className="text-center">
+                        <p className="font-bold">{item.name}</p>
+                        <p className="text-sm text-muted-foreground">{item.description}</p>
+                        <p className="text-lg font-bold mt-1">{item.price} <span className="text-sm font-medium text-muted-foreground">coins</span></p>
+                    </div>
+                </TooltipContent>
+            </Tooltip>
+        </TooltipProvider>
+    );
+};
+
+const AnimatedBannerCard = ({ item, onPurchaseClick, isLoggedIn }) => {
+    const navigate = useNavigate();
+    const { user: currentUser } = useAuth();
+
+    const displayUser = currentUser ? {
+        ...currentUser,
+        tags: currentUser.tags || [],
+    } : {
+        username: 'YourName',
+        description: 'Your cool description!',
+        pfp_url: '/placeholders/avatar_placeholder.png',
+        banner_url: '/placeholders/banner_placeholder.png',
+        rank: { name: 'User', display_color: '#AAAAAA' },
+        reputation_count: 123,
+        clanMembership: { clan: { name: 'YourClan' } },
+        first_login: new Date().toISOString(),
+        tags: [],
+    };
+
+    const handleCardClick = () => {
+        if (isLoggedIn) {
+            onPurchaseClick(item);
+        } else {
+            navigate('/login');
+        }
+    };
+
+    return (
+        <TooltipProvider>
+            <Tooltip delayDuration={1000}>
+                <TooltipTrigger asChild>
+                    <div onClick={handleCardClick} className="cursor-pointer">
+                        <PlayerCard
+                            user={displayUser}
+                            customBannerUrl={item.image_url}
+                            disableLink={true}
+                        />
+                    </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                    <div className="text-center">
+                        <p className="font-bold">{item.name}</p>
+                        <p className="text-sm text-muted-foreground">{item.description}</p>
+                        <p className="text-lg font-bold mt-1">{item.price} <span className="text-sm font-medium text-muted-foreground">coins</span></p>
+                    </div>
+                </TooltipContent>
+            </Tooltip>
+        </TooltipProvider>
+    );
+};
 
 const ItemCard = ({ item, onPurchaseClick, isLoggedIn }) => {
     const navigate = useNavigate();
 
     if (item.item_type === 'PROFILE_FRAME') {
         return <ProfileFrameCard item={item} onPurchaseClick={onPurchaseClick} isLoggedIn={isLoggedIn} />;
+    }
+
+    if (item.item_type === 'ANIMATED_AVATAR') {
+        return <AnimatedAvatarCard item={item} onPurchaseClick={onPurchaseClick} isLoggedIn={isLoggedIn} />;
+    }
+
+    if (item.item_type === 'ANIMATED_BANNER') {
+        return <AnimatedBannerCard item={item} onPurchaseClick={onPurchaseClick} isLoggedIn={isLoggedIn} />;
     }
 
     return (
@@ -160,13 +249,18 @@ function ShopPage() {
     const [activeTab, setActiveTab] = useState('');
 
     const itemTypeToCategoryName = {
-        COMMAND: 'Ranks & Items',
         PROFILE_FRAME: 'Frames',
+        ANIMATED_AVATAR: 'Animated Avatars',
+        ANIMATED_BANNER: 'Animated Banners',
     };
 
     const { groupedItems, categories } = useMemo(() => {
-        const groups = allItems.reduce((acc, item) => {
-            const itemType = item.item_type || 'COMMAND';
+        // Filter only allowed item types
+        const allowedTypes = ['PROFILE_FRAME', 'ANIMATED_AVATAR', 'ANIMATED_BANNER'];
+        const filteredItems = allItems.filter(item => allowedTypes.includes(item.item_type));
+
+        const groups = filteredItems.reduce((acc, item) => {
+            const itemType = item.item_type;
             const categoryName = itemTypeToCategoryName[itemType] || itemType;
 
             if (!acc[categoryName]) {
@@ -177,8 +271,6 @@ function ShopPage() {
         }, {});
 
         const sortedCategories = Object.keys(groups).sort((a, b) => {
-            if (a === 'Ranks & Items') return -1;
-            if (b === 'Ranks & Items') return 1;
             return a.localeCompare(b);
         });
 
@@ -224,9 +316,21 @@ function ShopPage() {
 
     const gridColumnsStyle = categories.length > 0 ? { gridTemplateColumns: 'repeat(' + categories.length + ', 1fr)' } : {};
 
+    const externalShopUrl = import.meta.env.VITE_EXTERNAL_SHOP_URL;
+
     return (
         <div className="space-y-6">
-            <h1 className="font-sans text-3xl font-bold">Item Shop</h1>
+            <div className="flex items-center justify-between">
+                <h1 className="font-sans text-3xl font-bold">Item Shop</h1>
+                {externalShopUrl && (
+                    <Button asChild variant="outline">
+                        <a href={externalShopUrl} target="_blank" rel="noopener noreferrer">
+                            <ExternalLink className="mr-2 h-4 w-4" />
+                            External Shop
+                        </a>
+                    </Button>
+                )}
+            </div>
 
             {categories.length > 0 ? (
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">

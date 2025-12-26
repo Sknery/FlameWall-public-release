@@ -156,8 +156,12 @@ function AdminRanksPage() {
         setIsEditModalOpen(true);
     };
 
-    const handleFormChange = (e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
-    const handleColorChange = (e) => setFormData(prev => ({ ...prev, display_color: e.target.value }));
+    const handleFormChange = useCallback((e) => {
+        setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    }, []);
+    const handleColorChange = useCallback((e) => {
+        setFormData(prev => ({ ...prev, display_color: e.target.value }));
+    }, []);
 
     const handleSaveRank = async (event) => {
         event.preventDefault();
@@ -235,7 +239,12 @@ function AdminRanksPage() {
             </motion.div>
 
             <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
-                <DialogContent className="sm:max-w-2xl flex flex-col max-h-[90vh]">
+                <DialogContent 
+                    className="sm:max-w-2xl flex flex-col max-h-[90vh]"
+                    onOpenAutoFocus={(e) => {
+                        e.preventDefault();
+                    }}
+                >
                     <DialogHeader>
                         <DialogTitle>{editingRank ? 'Edit Rank' : 'Create New Rank'}</DialogTitle>
                         <DialogDescription>

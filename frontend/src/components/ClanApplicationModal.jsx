@@ -21,9 +21,9 @@ function ClanApplicationModal({ open, onClose, clan, onSubmit }) {
     }
   }, [open]);
 
-  const handleChange = (label, value) => {
+  const handleChange = useCallback((label, value) => {
     setAnswers(prev => ({ ...prev, [label]: value }));
-  };
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -36,7 +36,12 @@ function ClanApplicationModal({ open, onClose, clan, onSubmit }) {
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent 
+        className="sm:max-w-[425px]"
+        onOpenAutoFocus={(e) => {
+          e.preventDefault();
+        }}
+      >
         {}
         <form onSubmit={handleSubmit}>
             <DialogHeader>

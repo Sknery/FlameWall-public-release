@@ -280,6 +280,7 @@ const SettingsAndPreview = ({ achievementData, onUpdate, allGroups, onGroupChang
                         </Select>
                     </div>
                     <div className="space-y-2"><Label>Reward Command</Label><Input name="reward_command" value={achievementData.reward_command || ''} onChange={(e) => onUpdate(p => ({ ...p, reward_command: e.target.value }))} placeholder="eco give {username} 100" /></div>
+                    <div className="space-y-2"><Label>Reward Coins</Label><Input type="number" name="reward_coins" value={achievementData.reward_coins || 0} onChange={(e) => onUpdate(p => ({ ...p, reward_coins: parseInt(e.target.value) || 0 }))} placeholder="0" min="0" /></div>
                     <Separator />
                     <Label>Preview</Label>
                     <AchievementCard achievement={achievementData} isPreview={true} />
@@ -312,7 +313,7 @@ function AdminAchievementBuilderPage() {
     const [error, setError] = useState(null);
     const [isSaving, setIsSaving] = useState(false);
     const [achievementData, setAchievementData] = useState({
-        name: '', description: '', reward_command: '', is_enabled: true,
+        name: '', description: '', reward_command: '', reward_coins: 0, is_enabled: true,
         group_id: null,
         parent_id: parentIdParam ? Number(parentIdParam) : null,
         card_color: '#32383E', text_color: '#F0F4F8',

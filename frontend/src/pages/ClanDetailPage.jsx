@@ -35,6 +35,10 @@ const ClanActionModal = ({ isOpen, onClose, actionType, member, clan, onActionSu
     const [formData, setFormData] = useState({});
     const [error, setError] = useState('');
 
+    const handleFormChange = useCallback((field, value) => {
+        setFormData(prev => ({ ...prev, [field]: value }));
+    }, []);
+
     useEffect(() => {
         if (member) {
             setFormData({
@@ -97,7 +101,11 @@ const ClanActionModal = ({ isOpen, onClose, actionType, member, clan, onActionSu
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent>
+            <DialogContent
+                onOpenAutoFocus={(e) => {
+                    e.preventDefault();
+                }}
+            >
                 <form onSubmit={handleSubmit}>
                     <DialogHeader>
                         <DialogTitle>{titles[actionType]}: {member?.user.username}</DialogTitle>
@@ -107,7 +115,7 @@ const ClanActionModal = ({ isOpen, onClose, actionType, member, clan, onActionSu
                         {actionType === 'role' && (
                             <div className="space-y-2">
                                 <Label>New Role</Label>
-                                <Select value={String(formData.roleId)} onValueChange={(val) => setFormData(p => ({ ...p, roleId: Number(val) }))}>
+                                <Select value={String(formData.roleId)} onValueChange={(val) => handleFormChange('roleId', Number(val))}>
                                     <SelectTrigger><SelectValue /></SelectTrigger>
                                     <SelectContent>
                                         {clan?.roles.map(r => <SelectItem key={r.id} value={String(r.id)}>{r.name} (Lvl: {r.power_level})</SelectItem>)}
@@ -118,13 +126,13 @@ const ClanActionModal = ({ isOpen, onClose, actionType, member, clan, onActionSu
                         {['kick', 'warn', 'mute'].includes(actionType) && (
                             <div className="space-y-2">
                                 <Label>Reason</Label>
-                                <Textarea value={formData.reason || ''} onChange={(e) => setFormData(p => ({ ...p, reason: e.target.value }))} required={actionType !== 'kick'} />
+                                <Textarea value={formData.reason || ''} onChange={(e) => handleFormChange('reason', e.target.value)} required={actionType !== 'kick'} />
                             </div>
                         )}
                         {actionType === 'mute' && (
                             <div className="space-y-2">
                                 <Label>Duration (in minutes)</Label>
-                                <Input type="number" value={formData.duration_minutes || ''} onChange={(e) => setFormData(p => ({ ...p, duration_minutes: e.target.value }))} placeholder="Leave empty for permanent" />
+                                <Input type="number" value={formData.duration_minutes || ''} onChange={(e) => handleFormChange('duration_minutes', e.target.value)} placeholder="Leave empty for permanent" />
                             </div>
                         )}
                     </div>

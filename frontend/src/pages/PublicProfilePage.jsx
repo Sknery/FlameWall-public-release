@@ -1,7 +1,7 @@
 
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams, useNavigate, Link as RouterLink, useOutletContext } from 'react-router-dom';
+import { useParams, useNavigate, Link as RouterLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 import toast from 'react-hot-toast';
@@ -121,33 +121,11 @@ const BanUserModal = ({ isOpen, onClose, user, onConfirm, loading }) => {
     );
 };
 
-const StickyProfileHeader = ({ profile }) => (
-    <div className="flex items-center justify-between px-6 py-3  bg-black">
-        <div className="flex items-center gap-3">
-            <Avatar className="h-9 w-9 border">
-                <AvatarImage src={constructImageUrl(profile.pfp_url)} />
-                <AvatarFallback><User className="h-5 w-5" /></AvatarFallback>
-            </Avatar>
-            <div>
-                <p className="text-sm font-bold flex items-center gap-1.5">
-                    {profile.username}
-                    <VerifiedIcons user={profile} size="0.8em" />
-                </p>
-                <p className="text-xs font-medium opacity-80" style={{ color: profile.rank?.display_color }}>
-                    {profile.rank?.name}
-                </p>
-            </div>
-        </div>
-    </div>
-);
-
 function PublicProfilePage() {
     const { userId } = useParams();
     const navigate = useNavigate();
     const { isLoggedIn, user: currentUser, authToken } = useAuth();
     const { setBreadcrumbs } = useBreadcrumbs();
-    const { scrollRef, setStickyHeader } = useOutletContext();
-
     const [profile, setProfile] = useState(null);
     const [adminData, setAdminData] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -158,20 +136,6 @@ function PublicProfilePage() {
 
     const [isAdminActionsOpen, setIsAdminActionsOpen] = useState(false);
     const [isBanModalOpen, setIsBanModalOpen] = useState(false);
-
-    useEffect(() => {
-        if (!scrollRef?.current || !profile) return;
-        const handleScroll = () => {
-            const show = scrollRef.current.scrollTop > 450;
-            setStickyHeader(show ? <StickyProfileHeader profile={profile} /> : null);
-        };
-        const container = scrollRef.current;
-        container.addEventListener('scroll', handleScroll);
-        return () => {
-            container.removeEventListener('scroll', handleScroll);
-            setStickyHeader(null);
-        };
-    }, [scrollRef, profile, setStickyHeader]);
 
     const fetchProfile = useCallback(async () => {
         if (currentUser === undefined) return;
@@ -366,20 +330,21 @@ function PublicProfilePage() {
 
     return (
         <>
-            <div className="flex flex-col md:flex-row gap-6 md:h-full">
-                {}
-                <div className="md:w-[320px] md:shrink-0">
-                    <UserProfileSidebar user={profile}>
-                        <div className="flex flex-wrap justify-center gap-2">
-                            {renderActionButtons()}
-                        </div>
-                    </UserProfileSidebar>
+            <div className="flex flex-col md:flex-row gap-6 h-full overflow-hidden">
+                <div className="md:w-[320px] md:shrink-0 h-full overflow-hidden flex flex-col">
+                    <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-secondary">
+                        <UserProfileSidebar user={profile}>
+                            <div className="flex flex-wrap justify-center gap-2">
+                                {renderActionButtons()}
+                            </div>
+                        </UserProfileSidebar>
+                    </div>
                 </div>
 
-                <div className="flex-1 min-w-0 flex flex-col gap-4 md:h-full md:overflow-hidden">
+                <div className="flex-1 min-w-0 flex flex-col gap-4 h-full overflow-hidden">
                     <h2 className="font-sans text-2xl font-bold shrink-0">Posts by {profile.username}</h2>
 
-                    <div className="flex-1 min-h-0">
+                    <div className="flex-1 min-h-0 overflow-hidden">
                         {!loading && <UserPostsList userId={profile.id} />}
                     </div>
                 </div>

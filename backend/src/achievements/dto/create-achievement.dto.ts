@@ -39,6 +39,10 @@ export class CreateAchievementDto {
   @IsString()
   reward_command?: string;
 
+  @IsOptional()
+  @IsInt()
+  reward_coins?: number;
+
   @IsNotEmpty()
   @IsObject()
   conditions: Record<string, any>;

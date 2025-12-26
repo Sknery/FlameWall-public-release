@@ -43,16 +43,35 @@ export class UploadsController {
     private async processAndSaveImage(
         file: Express.Multer.File,
         folder: string,
-        options: { width?: number; height?: number; fit?: keyof sharp.FitEnum } = {}
+        options: { width?: number; height?: number; fit?: keyof sharp.FitEnum; preserveGif?: boolean } = {}
     ): Promise<string> {
         if (!file) throw new BadRequestException('File is empty');
 
-        const allowedMimes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+        const allowedMimes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif'];
         if (!allowedMimes.includes(file.mimetype)) {
-            throw new BadRequestException('Unsupported file type. Use JPG, PNG, or WebP.');
+            throw new BadRequestException('Unsupported file type. Use JPG, PNG, WebP, GIF, or AVIF.');
         }
 
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const isAnimated = file.mimetype === 'image/gif' || file.mimetype === 'image/avif';
+        const preserveGif = options.preserveGif !== false && isAnimated;
+        
+        // For animated files (GIF/AVIF) that should be preserved, save them directly without processing
+        if (preserveGif) {
+            const ext = extname(file.originalname) || (file.mimetype === 'image/gif' ? '.gif' : '.avif');
+            const filename = `${uniqueSuffix}${ext}`;
+            const filepath = join(this.uploadBaseDir, folder, filename);
+            
+            try {
+                await fs.writeFile(filepath, file.buffer);
+                this.logger.log(`Animated file (${file.mimetype}) saved directly to ${filepath}`);
+                return `/uploads/${folder}/${filename}`;
+            } catch (error) {
+                this.logger.error(`Failed to save animated file for ${folder}`, error);
+                throw new BadRequestException(`Failed to save ${file.mimetype} file.`);
+            }
+        }
+
         const filename = `${uniqueSuffix}.webp`;
         const filepath = join(this.uploadBaseDir, folder, filename);
 
@@ -107,7 +126,8 @@ export class UploadsController {
     @ApiConsumes('multipart/form-data')
     @ApiBody({ schema: { type: 'object', properties: { file: { type: 'string', format: 'binary' } } } })
     async uploadShopItemImage(@UploadedFile() file: Express.Multer.File) {
-        const url = await this.processAndSaveImage(file, 'shop', { width: 512, height: 512, fit: 'cover' });
+        // Preserve GIF files for animated avatars and banners
+        const url = await this.processAndSaveImage(file, 'shop', { width: 512, height: 512, fit: 'cover', preserveGif: true });
         return { url };
     }
 

@@ -39,6 +39,9 @@ export class Achievement {
   @Column({ type: 'text', name: 'reward_command', nullable: true })
   reward_command: string | null;
 
+  @Column({ type: 'integer', name: 'reward_coins', nullable: true, default: 0 })
+  reward_coins: number | null;
+
   @Column({ type: 'jsonb' })
   conditions: Record<string, any>;
 

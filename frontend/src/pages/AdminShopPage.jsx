@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
@@ -27,6 +27,8 @@ import { constructImageUrl } from '../utils/url';
 import { listContainer, fadeInUp } from '../utils/animations';
 import VerifiedIcons from '../components/VerifiedIcons';
 import ImageCropperModal from '../components/ImageCropperModal';
+import PlayerCard from '../components/PlayerCard';
+
 
 
 const useMediaQuery = (query) => {
@@ -51,31 +53,81 @@ const lightenHexColor = (hex, percent) => {
        ((0|(1<<8) + b + (256 - b) * percent / 100).toString(16)).substr(1);
 };
 
-const ProfileFramePreview = ({ item }) => {
+const ProfileFramePreview = React.memo(({ item }) => {
     const { user: currentUser } = useAuth();
-    const displayUser = currentUser || { username: 'YourName', pfp_url: null, banner_url: null, rank: { name: 'User', display_color: '#AAAAAA' } };
+    const displayUser = currentUser ? {
+        ...currentUser,
+        tags: currentUser.tags || [],
+    } : {
+        username: 'YourName',
+        pfp_url: '/placeholders/avatar_placeholder.png',
+        banner_url: '/placeholders/banner_placeholder.png',
+        rank: { name: 'User', display_color: '#AAAAAA' },
+        reputation_count: 123,
+        clanMembership: { clan: { name: 'YourClan' } },
+        first_login: new Date().toISOString(),
+        tags: [],
+    };
     const frameColor = item.cosmetic_data?.color || '#FF4D00';
-    const lightFrameColor = lightenHexColor(frameColor, 60);
 
     return (
-        <div className="relative rounded-xl overflow-hidden p-[2px] h-full flex flex-col">
-            <span className="absolute inset-[-1000%] animate-[spin_3s_linear_infinite]" style={{ background: `conic-gradient(from 90deg at 50% 50%, ${lightFrameColor} 0%, ${frameColor} 50%, ${lightFrameColor} 100%)` }}/>
-            <div className="relative z-10 bg-card rounded-[10px] h-full flex flex-col">
-                <CardContent className="flex flex-col items-center text-center p-6 pb-2 flex-grow">
-                    <div className="w-full aspect-[16/5] rounded-t-lg bg-cover bg-center" style={{ backgroundImage: `url(${constructImageUrl(displayUser.banner_url) || '/placeholders/banner_placeholder.png'})` }}/>
-                    <div className="w-[30%] -mt-[18%]"><Avatar className="h-full w-full aspect-square border-4 border-background"><AvatarImage src={constructImageUrl(displayUser.pfp_url)} /><AvatarFallback><User className="h-[60%] w-[60%]" /></AvatarFallback></Avatar></div>
-                    <h2 className="font-sans mt-4 flex items-center gap-2 text-xl font-bold">{displayUser.username}<VerifiedIcons user={displayUser} /></h2>
-                    <p className="text-sm font-semibold" style={{ color: displayUser.rank?.display_color }}>{displayUser.rank?.name}</p>
-                </CardContent>
-                <CardFooter className="p-4 pt-2 mt-auto flex-col items-stretch gap-2">
-                     <div className="w-full text-center"><h3 className="font-bold text-lg">{item.name || "Item Name"}</h3><p className="text-xs text-muted-foreground">{item.description || "Item description..."}</p></div>
-                    <Separator className="my-2" />
-                    <p className="text-xl font-bold text-center">{item.price || 0} <span className="text-sm font-medium text-muted-foreground">coins</span></p>
-                </CardFooter>
-            </div>
-        </div>
+        <PlayerCard
+            user={displayUser}
+            customFrameColor={frameColor}
+            disableLink={true}
+        />
     );
-};
+});
+
+const AnimatedAvatarPreview = React.memo(({ item, imagePreview }) => {
+    const { user: currentUser } = useAuth();
+    const displayUser = currentUser ? {
+        ...currentUser,
+        tags: currentUser.tags || [],
+    } : {
+        username: 'YourName',
+        pfp_url: '/placeholders/avatar_placeholder.png',
+        banner_url: '/placeholders/banner_placeholder.png',
+        rank: { name: 'User', display_color: '#AAAAAA' },
+        reputation_count: 123,
+        clanMembership: { clan: { name: 'YourClan' } },
+        first_login: new Date().toISOString(),
+        tags: [],
+    };
+
+    return (
+        <PlayerCard
+            user={displayUser}
+            customAvatarUrl={imagePreview}
+            disableLink={true}
+        />
+    );
+});
+
+const AnimatedBannerPreview = React.memo(({ item, imagePreview }) => {
+    const { user: currentUser } = useAuth();
+    const displayUser = currentUser ? {
+        ...currentUser,
+        tags: currentUser.tags || [],
+    } : {
+        username: 'YourName',
+        pfp_url: '/placeholders/avatar_placeholder.png',
+        banner_url: '/placeholders/banner_placeholder.png',
+        rank: { name: 'User', display_color: '#AAAAAA' },
+        reputation_count: 123,
+        clanMembership: { clan: { name: 'YourClan' } },
+        first_login: new Date().toISOString(),
+        tags: [],
+    };
+
+    return (
+        <PlayerCard
+            user={displayUser}
+            customBannerUrl={imagePreview}
+            disableLink={true}
+        />
+    );
+});
 
 const ItemCardPreview = ({ item, imagePreview }) => (
     <Card className="h-full flex flex-col overflow-hidden">
@@ -102,13 +154,91 @@ const ItemPreviewCard = ({ item, imagePreview }) => {
     if (item.item_type === 'PROFILE_FRAME') {
         return <ProfileFramePreview item={item} />;
     }
+    if (item.item_type === 'ANIMATED_AVATAR') {
+        return <AnimatedAvatarPreview item={item} imagePreview={imagePreview} />;
+    }
+    if (item.item_type === 'ANIMATED_BANNER') {
+        return <AnimatedBannerPreview item={item} imagePreview={imagePreview} />;
+    }
     return <ItemCardPreview item={item} imagePreview={imagePreview} />;
 };
+
+const MemoizedPreview = React.memo(ItemPreviewCard, (prevProps, nextProps) => {
+    return prevProps.item?.item_type === nextProps.item?.item_type &&
+           prevProps.item?.name === nextProps.item?.name &&
+           prevProps.item?.price === nextProps.item?.price &&
+           prevProps.item?.description === nextProps.item?.description &&
+           prevProps.imagePreview === nextProps.imagePreview;
+});
+
+const FormFields = React.memo(({ 
+    formData, 
+    error, 
+    imagePreview, 
+    fileInputRef, 
+    handleChange, 
+    handleCosmeticChange, 
+    handleSwitchChange, 
+    handleItemTypeChange, 
+    handleFileChange 
+}) => {
+    return (
+    <>
+        {error && <Alert variant="destructive"><Terminal className="h-4 w-4" /><AlertTitle>Error</AlertTitle><AlertDescription>{error}</AlertDescription></Alert>}
+        <div className="space-y-2"><Label>Item Name</Label><Input name="name" value={formData.name || ''} onChange={handleChange} required /></div>
+        <div className="space-y-2"><Label>Description</Label><Textarea name="description" value={formData.description || ''} onChange={handleChange} /></div>
+        <div className="grid sm:grid-cols-2 gap-4">
+            <div className="space-y-2"><Label>Price (in coins)</Label><Input name="price" type="number" value={formData.price || 0} onChange={handleChange} required /></div>
+            <div className="space-y-2"><Label>Category</Label><Input name="category" value={formData.category || ''} onChange={handleChange} required /></div>
+        </div>
+         <div className="space-y-2">
+            <Label>Item Image</Label>
+            <div className="flex items-center gap-4">
+                {imagePreview && (
+                    <div className="w-16 h-16 rounded-md bg-muted overflow-hidden">
+                        <img src={constructImageUrl(imagePreview)} alt="Preview" className="w-full h-full object-cover" />
+                    </div>
+                )}
+                <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()}><Edit className="mr-2 h-4 w-4" />{imagePreview ? 'Change' : 'Upload'} Image</Button>
+                <input type="file" ref={fileInputRef} hidden accept="image/*" onChange={handleFileChange} />
+            </div>
+        </div>
+        <div className="space-y-2"><Label>Item Type</Label>
+            <Select value={formData.item_type} onValueChange={handleItemTypeChange}>
+                <SelectTrigger><SelectValue/></SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="PROFILE_FRAME">Profile Card Frame</SelectItem>
+                    <SelectItem value="ANIMATED_AVATAR">Animated Avatar</SelectItem>
+                    <SelectItem value="ANIMATED_BANNER">Animated Banner</SelectItem>
+                </SelectContent>
+            </Select>
+        </div>
+        {formData.item_type === 'PROFILE_FRAME' && (
+            <div className="space-y-2"><Label>Frame Color</Label><Input type="color" name="color" value={formData.cosmetic_data?.color || '#FF4D00'} onChange={handleCosmeticChange} className="p-1 h-10 w-20" /></div>
+        )}
+        <div className="flex items-center justify-between rounded-lg border p-4"><div className="space-y-0.5"><Label className="text-base">Item is Active</Label><p className="text-sm text-muted-foreground">If disabled, this item will not be visible in the shop.</p></div><Switch name="is_active" checked={formData.is_active} onCheckedChange={handleSwitchChange} /></div>
+    </>
+    );
+}, (prevProps, nextProps) => {
+    // Custom comparison to prevent unnecessary re-renders
+    return prevProps.formData.name === nextProps.formData.name &&
+           prevProps.formData.description === nextProps.formData.description &&
+           prevProps.formData.price === nextProps.formData.price &&
+           prevProps.formData.category === nextProps.formData.category &&
+           prevProps.formData.item_type === nextProps.formData.item_type &&
+           prevProps.formData.cosmetic_data?.color === nextProps.formData.cosmetic_data?.color &&
+           prevProps.formData.is_active === nextProps.formData.is_active &&
+           prevProps.error === nextProps.error &&
+           prevProps.imagePreview === nextProps.imagePreview;
+});
 
 const ItemEditModal = ({ open, onClose, item, onSaveSuccess }) => {
     const { authToken } = useAuth();
     const isEditing = !!item;
     const isDesktop = useMediaQuery('(min-width: 768px)');
+    
+    // Prevent focus loss by using a ref to track active element
+    const activeElementRef = useRef(null);
 
     const [formData, setFormData] = useState({});
     const [imageFile, setImageFile] = useState(null);
@@ -124,7 +254,7 @@ const ItemEditModal = ({ open, onClose, item, onSaveSuccess }) => {
         if (open) {
             const initialData = isEditing ? { ...item, cosmetic_data: item.cosmetic_data || {} } : {
                 name: '', description: '', price: 0, image_url: '', ingame_command: '',
-                category: 'items', is_active: true, item_type: 'COMMAND', cosmetic_data: {}
+                category: 'items', is_active: true, item_type: 'PROFILE_FRAME', cosmetic_data: {}
             };
             setFormData(initialData);
             setImagePreview(isEditing ? item.image_url : null);
@@ -133,18 +263,49 @@ const ItemEditModal = ({ open, onClose, item, onSaveSuccess }) => {
         }
     }, [open, item, isEditing]);
 
-    const handleChange = (e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
-    const handleCosmeticChange = (e) => setFormData(prev => ({...prev, cosmetic_data: { ...prev.cosmetic_data, [e.target.name]: e.target.value }}));
-    const handleSwitchChange = (checked) => setFormData(prev => ({ ...prev, is_active: checked }));
+    const handleChange = useCallback((e) => {
+        setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    }, []);
+    const handleCosmeticChange = useCallback((e) => {
+        setFormData(prev => ({...prev, cosmetic_data: { ...prev.cosmetic_data, [e.target.name]: e.target.value }}));
+    }, []);
+    const handleSwitchChange = useCallback((checked) => {
+        setFormData(prev => ({ ...prev, is_active: checked }));
+    }, []);
 
-    const handleFileChange = (event) => {
+    const handleFileChange = useCallback((event) => {
         const file = event.target.files[0];
         if (!file) return;
+        
+        // For animated avatars and banners, skip cropping to preserve animation
+        const isAnimatedItem = formData.item_type === 'ANIMATED_AVATAR' || formData.item_type === 'ANIMATED_BANNER';
+        const isAnimatedFormat = file.type === 'image/gif' || 
+                                  file.type === 'image/avif' || 
+                                  file.name.toLowerCase().endsWith('.gif') ||
+                                  file.name.toLowerCase().endsWith('.avif');
+        
+        if (isAnimatedItem && isAnimatedFormat) {
+            // Direct upload for animated items - no cropping to preserve animation
+            const previewUrl = URL.createObjectURL(file);
+            setImageFile(file);
+            setImagePreview(previewUrl);
+            event.target.value = null;
+            return;
+        }
+        
+        // For animated items with non-animated files, show warning
+        if (isAnimatedItem && !isAnimatedFormat) {
+            toast.error('Animated avatars and banners must be GIF or AVIF files to preserve animation.');
+            event.target.value = null;
+            return;
+        }
+        
+        // For other images, use cropper
         const reader = new FileReader();
         reader.addEventListener('load', () => { setImageToCrop(reader.result?.toString() || ''); setCropperOpen(true); });
         reader.readAsDataURL(file);
         event.target.value = null;
-    };
+    }, [formData.item_type]);
 
     const handleCropComplete = (croppedImageBlob) => {
         if (!croppedImageBlob) { setCropperOpen(false); return; }
@@ -184,51 +345,20 @@ const ItemEditModal = ({ open, onClose, item, onSaveSuccess }) => {
         }
     };
 
-    const FormFields = () => (
-        <>
-            {error && <Alert variant="destructive"><Terminal className="h-4 w-4" /><AlertTitle>Error</AlertTitle><AlertDescription>{error}</AlertDescription></Alert>}
-            <div className="space-y-2"><Label>Item Name</Label><Input name="name" value={formData.name || ''} onChange={handleChange} required /></div>
-            <div className="space-y-2"><Label>Description</Label><Textarea name="description" value={formData.description || ''} onChange={handleChange} /></div>
-            <div className="grid sm:grid-cols-2 gap-4">
-                <div className="space-y-2"><Label>Price (in coins)</Label><Input name="price" type="number" value={formData.price || 0} onChange={handleChange} required /></div>
-                <div className="space-y-2"><Label>Category</Label><Input name="category" value={formData.category || ''} onChange={handleChange} required /></div>
-            </div>
-             <div className="space-y-2">
-                <Label>Item Image</Label>
-                <div className="flex items-center gap-4">
-                    {imagePreview && (
-                        <div className="w-16 h-16 rounded-md bg-muted overflow-hidden">
-                            <img src={constructImageUrl(imagePreview)} alt="Preview" className="w-full h-full object-cover" />
-                        </div>
-                    )}
-                    <Button type="button" variant="outline" onClick={() => fileInputRef.current.click()}><Edit className="mr-2 h-4 w-4" />{imagePreview ? 'Change' : 'Upload'} Image</Button>
-                    <input type="file" ref={fileInputRef} hidden accept="image/*" onChange={handleFileChange} />
-                </div>
-            </div>
-            <div className="space-y-2"><Label>Item Type</Label>
-                <Select value={formData.item_type} onValueChange={(value) => setFormData(p => ({...p, item_type: value, cosmetic_data: {}}))}>
-                    <SelectTrigger><SelectValue/></SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="COMMAND">Command (e.g., Rank)</SelectItem>
-                        <SelectItem value="PROFILE_FRAME">Profile Card Frame</SelectItem>
-                        <SelectItem value="AVATAR_FRAME" disabled>Avatar Frame (soon)</SelectItem>
-                    </SelectContent>
-                </Select>
-            </div>
-            {formData.item_type === 'COMMAND' && (
-                <div className="space-y-2"><Label>In-game Command</Label><Input name="ingame_command" value={formData.ingame_command || ''} onChange={handleChange} placeholder="lp user {username} parent set vip" required /></div>
-            )}
-            {formData.item_type === 'PROFILE_FRAME' && (
-                <div className="space-y-2"><Label>Frame Color</Label><Input type="color" name="color" value={formData.cosmetic_data?.color || '#FF4D00'} onChange={handleCosmeticChange} className="p-1 h-10 w-20" /></div>
-            )}
-            <div className="flex items-center justify-between rounded-lg border p-4"><div className="space-y-0.5"><Label className="text-base">Item is Active</Label><p className="text-sm text-muted-foreground">If disabled, this item will not be visible in the shop.</p></div><Switch name="is_active" checked={formData.is_active} onCheckedChange={handleSwitchChange} /></div>
-        </>
-    );
+    const handleItemTypeChange = useCallback((value) => {
+        setFormData(p => ({...p, item_type: value, cosmetic_data: {}}));
+    }, []);
 
     return (
         <>
             <Dialog open={open} onOpenChange={onClose}>
-                <DialogContent className="max-w-4xl h-[90vh] flex flex-col">
+                <DialogContent 
+                    className="max-w-4xl h-[90vh] flex flex-col"
+                    onOpenAutoFocus={(e) => {
+                        // Prevent auto focus on open to avoid focus issues
+                        e.preventDefault();
+                    }}
+                >
                     <DialogHeader>
                         <DialogTitle>{isEditing ? `Edit: ${item?.name || ''}` : 'Create New Shop Item'}</DialogTitle>
                         <DialogDescription>{isEditing ? 'Update the details for this shop item.' : 'Set up a new item to be sold in the shop.'}</DialogDescription>
@@ -236,7 +366,17 @@ const ItemEditModal = ({ open, onClose, item, onSaveSuccess }) => {
 
                     <form id="item-edit-form" onSubmit={handleSubmit} className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-6 overflow-hidden">
                         <div className="md:col-span-2 space-y-4 overflow-y-auto h-full pr-4">
-                           <FormFields />
+                           <FormFields 
+                               formData={formData}
+                               error={error}
+                               imagePreview={imagePreview}
+                               fileInputRef={fileInputRef}
+                               handleChange={handleChange}
+                               handleCosmeticChange={handleCosmeticChange}
+                               handleSwitchChange={handleSwitchChange}
+                               handleItemTypeChange={handleItemTypeChange}
+                               handleFileChange={handleFileChange}
+                           />
                         </div>
 
                         {isDesktop && (
@@ -244,7 +384,7 @@ const ItemEditModal = ({ open, onClose, item, onSaveSuccess }) => {
                                  <Card>
                                     <CardHeader><CardTitle>Live Preview</CardTitle></CardHeader>
                                     <CardContent>
-                                       <ItemPreviewCard item={formData} imagePreview={imagePreview} />
+                                       <MemoizedPreview item={formData} imagePreview={imagePreview} />
                                     </CardContent>
                                  </Card>
                             </div>
@@ -278,7 +418,7 @@ const ItemEditModal = ({ open, onClose, item, onSaveSuccess }) => {
                             <DialogTitle>Item Preview</DialogTitle>
                         </DialogHeader>
                         <div className="p-4">
-                            <ItemPreviewCard item={formData} imagePreview={imagePreview} />
+                            <MemoizedPreview item={formData} imagePreview={imagePreview} />
                         </div>
                         <DialogFooter>
                             <Button onClick={() => setIsPreviewModalOpen(false)}>Back to Editing</Button>
@@ -407,6 +547,132 @@ function AdminShopPage() {
 }
 
 const ItemCard = ({ item, onEdit, onDelete }) => {
+    const { user: currentUser } = useAuth();
+    
+    const displayUser = currentUser ? {
+        ...currentUser,
+        tags: currentUser.tags || [],
+    } : {
+        username: 'YourName',
+        description: 'Your cool description!',
+        pfp_url: '/placeholders/avatar_placeholder.png',
+        banner_url: '/placeholders/banner_placeholder.png',
+        rank: { name: 'User', display_color: '#AAAAAA' },
+        reputation_count: 123,
+        clanMembership: { clan: { name: 'YourClan' } },
+        first_login: new Date().toISOString(),
+        tags: [],
+    };
+
+    // Render profile preview for frame, animated avatar, and animated banner
+    if (item.item_type === 'PROFILE_FRAME') {
+        const frameColor = item.cosmetic_data?.color || '#FF4D00';
+        
+        return (
+            <div className="h-full">
+                <PlayerCard
+                    user={displayUser}
+                    customFrameColor={frameColor}
+                    disableLink={true}
+                    showShopFooter={true}
+                    shopFooterAlwaysVisible={true}
+                    shopFooterContent={
+                        <>
+                            <div className="flex justify-between items-start mb-2">
+                                <div className="w-full text-center">
+                                    <h3 className="font-bold text-lg">{item.name}</h3>
+                                    <p className="text-xs text-muted-foreground">{item.category} / {item.item_type}</p>
+                                </div>
+                                <Badge variant={item.is_active ? 'default' : 'outline'} className={item.is_active ? 'bg-green-600' : ''}>
+                                    {item.is_active ? 'Active' : 'Inactive'}
+                                </Badge>
+                            </div>
+                            <Separator className="my-2" />
+                            <div className="flex justify-between items-center">
+                                <p className="text-xl font-bold">{item.price} <span className="text-sm font-medium text-muted-foreground">coins</span></p>
+                                <div className="flex items-center">
+                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEdit(item)}><Edit className="h-4 w-4" /></Button>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onDelete(item)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                                </div>
+                            </div>
+                        </>
+                    }
+                />
+            </div>
+        );
+    }
+
+    if (item.item_type === 'ANIMATED_AVATAR') {
+        return (
+            <div className="h-full">
+                <PlayerCard
+                    user={displayUser}
+                    customAvatarUrl={item.image_url}
+                    disableLink={true}
+                    showShopFooter={true}
+                    shopFooterAlwaysVisible={true}
+                    shopFooterContent={
+                        <>
+                            <div className="flex justify-between items-start mb-2">
+                                <div className="w-full text-center">
+                                    <h3 className="font-bold text-lg">{item.name}</h3>
+                                    <p className="text-xs text-muted-foreground">{item.category} / {item.item_type}</p>
+                                </div>
+                                <Badge variant={item.is_active ? 'default' : 'outline'} className={item.is_active ? 'bg-green-600' : ''}>
+                                    {item.is_active ? 'Active' : 'Inactive'}
+                                </Badge>
+                            </div>
+                            <Separator className="my-2" />
+                            <div className="flex justify-between items-center">
+                                <p className="text-xl font-bold">{item.price} <span className="text-sm font-medium text-muted-foreground">coins</span></p>
+                                <div className="flex items-center">
+                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEdit(item)}><Edit className="h-4 w-4" /></Button>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onDelete(item)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                                </div>
+                            </div>
+                        </>
+                    }
+                />
+            </div>
+        );
+    }
+
+    if (item.item_type === 'ANIMATED_BANNER') {
+        return (
+            <div className="h-full">
+                <PlayerCard
+                    user={displayUser}
+                    customBannerUrl={item.image_url}
+                    disableLink={true}
+                    showShopFooter={true}
+                    shopFooterAlwaysVisible={true}
+                    shopFooterContent={
+                        <>
+                            <div className="flex justify-between items-start mb-2">
+                                <div className="w-full text-center">
+                                    <h3 className="font-bold text-lg">{item.name}</h3>
+                                    <p className="text-xs text-muted-foreground">{item.category} / {item.item_type}</p>
+                                </div>
+                                <Badge variant={item.is_active ? 'default' : 'outline'} className={item.is_active ? 'bg-green-600' : ''}>
+                                    {item.is_active ? 'Active' : 'Inactive'}
+                                </Badge>
+                            </div>
+                            <Separator className="my-2" />
+                            <div className="flex justify-between items-center">
+                                <p className="text-xl font-bold">{item.price} <span className="text-sm font-medium text-muted-foreground">coins</span></p>
+                                <div className="flex items-center">
+                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEdit(item)}><Edit className="h-4 w-4" /></Button>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onDelete(item)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                                </div>
+                            </div>
+                        </>
+                    }
+                />
+            </div>
+        );
+    }
+
+    // Default card for other item types
     return (
         <Card className="h-full flex flex-col overflow-hidden transition-all hover:shadow-lg hover:-translate-y-1">
             <div className="p-4">

@@ -63,22 +63,25 @@ function MyProfilePage() {
     if (!profile) return <p>Could not load profile.</p>;
 
     return (
-        <div className="flex flex-col md:flex-row gap-6 md:h-full">
-            {}
-            <div className="md:w-[320px] md:shrink-0">
-                <UserProfileSidebar user={profile}>
-                    <Button asChild>
-                        <RouterLink to="/posts/new"><Plus className="mr-2" />New Post</RouterLink>
-                    </Button>
-                    <Button asChild variant="outline">
-                        <RouterLink to="/profile/settings"><Edit className="mr-2" />Edit Profile</RouterLink>
-                    </Button>
-                </UserProfileSidebar>
+        <div className="flex flex-col md:flex-row gap-6 h-full overflow-hidden">
+            <div className="md:w-[320px] md:shrink-0 h-full overflow-hidden flex flex-col">
+                <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-secondary">
+                    <UserProfileSidebar user={profile}>
+                        <Button asChild>
+                            <RouterLink to="/posts/new"><Plus className="mr-2" />New Post</RouterLink>
+                        </Button>
+                        <Button asChild variant="outline">
+                            <RouterLink to="/profile/settings"><Edit className="mr-2" />Edit Profile</RouterLink>
+                        </Button>
+                    </UserProfileSidebar>
+                </div>
             </div>
 
-            <div className="flex-1 min-w-0 flex flex-col gap-4 md:h-full md:overflow-hidden">
+            <div className="flex-1 min-w-0 flex flex-col gap-4 h-full overflow-hidden">
                 <h2 className="font-sans text-2xl font-bold shrink-0">My Posts</h2>
-                {!loading && <UserPostsList userId={profile.id} />}
+                <div className="flex-1 min-h-0 overflow-hidden">
+                    {!loading && <UserPostsList userId={profile.id} />}
+                </div>
             </div>
         </div>
     );

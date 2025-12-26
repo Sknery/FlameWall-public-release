@@ -74,11 +74,11 @@ function AdminPageCategories() {
         setIsModalOpen(true);
     };
 
-    const handleFormChange = (e) => {
+    const handleFormChange = useCallback((e) => {
         const { name, value } = e.target;
         const finalValue = name === 'display_order' ? parseInt(value, 10) || 0 : value;
         setFormData(prev => ({ ...prev, [name]: finalValue }));
-    };
+    }, []);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -179,7 +179,12 @@ function AdminPageCategories() {
             }
 
             <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-                <DialogContent className="sm:max-w-[425px]">
+                <DialogContent 
+                    className="sm:max-w-[425px]"
+                    onOpenAutoFocus={(e) => {
+                        e.preventDefault();
+                    }}
+                >
                     <form onSubmit={handleSubmit}>
                         <DialogHeader>
                             <DialogTitle>{editingCategory ? 'Edit Category' : 'Create New Category'}</DialogTitle>

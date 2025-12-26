@@ -197,6 +197,13 @@ export class EventsService {
 
             this.logger.log(`ACHIEVEMENT COMPLETED: User ${user.username} (ID: ${user.id}) has completed "${achievement.name}"!`);
 
+            // Award coins if specified
+            if (achievement.reward_coins && achievement.reward_coins > 0) {
+                await this.usersRepository.increment({ id: user.id }, 'balance', achievement.reward_coins);
+                this.logger.log(`COINS AWARDED: User ${user.username} (ID: ${user.id}) received ${achievement.reward_coins} coins for completing "${achievement.name}"!`);
+            }
+
+            // Execute reward command if specified
             if (achievement.reward_command && user.minecraft_username) {
                 const command = achievement.reward_command.replace('{username}', user.minecraft_username);
                 const newCommand = this.pendingCommandsRepository.create({ command });

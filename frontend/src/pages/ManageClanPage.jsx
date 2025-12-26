@@ -387,9 +387,13 @@ const ClanRoleManager = ({ clan, onRolesUpdate }) => {
         setIsEditModalOpen(true);
     };
 
-    const handlePermissionChange = (permissionType, key, value) => {
+    const handlePermissionChange = useCallback((permissionType, key, value) => {
         setFormData(prev => ({ ...prev, [permissionType]: { ...prev[permissionType], [key]: value, } }));
-    };
+    }, []);
+
+    const handleFormFieldChange = useCallback((field, value) => {
+        setFormData(prev => ({ ...prev, [field]: value }));
+    }, []);
 
     const handleSaveRole = async (event) => {
         event.preventDefault();
@@ -529,15 +533,20 @@ const ClanRoleManager = ({ clan, onRolesUpdate }) => {
             </CardContent>
 
             <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
-                <DialogContent className="sm:max-w-[625px]">
+                <DialogContent 
+                    className="sm:max-w-[625px]"
+                    onOpenAutoFocus={(e) => {
+                        e.preventDefault();
+                    }}
+                >
                     <DialogHeader><DialogTitle>{editingRole ? 'Edit Role' : 'Create New Role'}</DialogTitle></DialogHeader>
                     {modalError && <Alert variant="destructive" className="my-4"><Terminal className="h-4 w-4" /><AlertDescription>{modalError}</AlertDescription></Alert>}
                     <form onSubmit={handleSaveRole} className="space-y-4 max-h-[70vh] overflow-y-auto p-1">
                         <div className="grid grid-cols-3 gap-4">
-                            <div className="space-y-2 col-span-2"><Label>Role Name</Label><Input name="name" value={formData.name} onChange={(e) => setFormData(p => ({ ...p, name: e.target.value }))} required /></div>
-                            <div className="space-y-2"><Label>Color</Label><Input name="color" type="color" value={formData.color} onChange={(e) => setFormData(p => ({ ...p, color: e.target.value }))} className="p-1 h-9" /></div>
+                            <div className="space-y-2 col-span-2"><Label>Role Name</Label><Input name="name" value={formData.name} onChange={(e) => handleFormFieldChange('name', e.target.value)} required /></div>
+                            <div className="space-y-2"><Label>Color</Label><Input name="color" type="color" value={formData.color} onChange={(e) => handleFormFieldChange('color', e.target.value)} className="p-1 h-9" /></div>
                         </div>
-                        <div className="space-y-2"><Label>Power Level</Label><Input name="power_level" type="number" value={formData.power_level} onChange={(e) => setFormData(p => ({ ...p, power_level: parseInt(e.target.value, 10) || 0 }))} disabled={!!editingRole?.is_system_role} required /><p className="text-xs text-muted-foreground">1-999. Higher is more powerful.</p></div>
+                        <div className="space-y-2"><Label>Power Level</Label><Input name="power_level" type="number" value={formData.power_level} onChange={(e) => handleFormFieldChange('power_level', parseInt(e.target.value, 10) || 0)} disabled={!!editingRole?.is_system_role} required /><p className="text-xs text-muted-foreground">1-999. Higher is more powerful.</p></div>
                         <Separator />
                         <h4 className="font-semibold">Clan Permissions</h4>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

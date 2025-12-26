@@ -12,7 +12,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Textarea } from "@/components/ui/textarea";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { ArrowLeft, Reply, Edit, Trash2, Send, Loader2, Terminal, X, User, MessageSquare, Copy } from 'lucide-react';
+import { ArrowLeft, Reply, Edit, Trash2, Send, Loader2, Terminal, X, User, MessageSquare, Copy, Settings, AlignLeft, AlignRight, Split } from 'lucide-react';
 import { constructImageUrl } from '@/utils/url';
 import { cn } from '@/lib/utils';
 import UserProfileSidebar from '../components/UserProfileSidebar';
@@ -20,7 +20,7 @@ import { useBreadcrumbs } from '@/context/BreadcrumbsContext';
 import VerifiedIcons from '../components/VerifiedIcons';
 import { Separator } from '@/components/ui/separator';
 
-const MessageBubble = ({ msg, isOwn, isConsecutive, onReply, onEdit, onDelete, onReplyLinkClick, currentUser }) => {
+const MessageBubble = ({ msg, isOwn, isConsecutive, onReply, onEdit, onDelete, onReplyLinkClick, currentUser, alignmentMode = 'split' }) => {
     const wasEdited = !msg.is_deleted && (new Date(msg.updated_at).getTime() - new Date(msg.sent_at).getTime() > 10000);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
 
@@ -43,25 +43,97 @@ const MessageBubble = ({ msg, isOwn, isConsecutive, onReply, onEdit, onDelete, o
         }
     };
 
+    // Determine alignment based on mode
+    const getAlignment = () => {
+        if (alignmentMode === 'left') return 'justify-start';
+        if (alignmentMode === 'right') return 'justify-end';
+        // Default 'split' mode
+        return isOwn ? 'justify-end' : 'justify-start';
+    };
+
+    const shouldShowAvatar = () => {
+        if (alignmentMode === 'left') return !isConsecutive;
+        if (alignmentMode === 'right') return false;
+        // Default 'split' mode
+        return !isOwn && !isConsecutive;
+    };
+
+    const shouldShowAvatarRight = () => {
+        if (alignmentMode === 'left') return false;
+        if (alignmentMode === 'right') return !isConsecutive;
+        // Default 'split' mode
+        return isOwn && !isConsecutive;
+    };
+
+    // Determine if we need to reserve space for avatar (for alignment)
+    const shouldReserveAvatarSpace = () => {
+        if (alignmentMode === 'left') return true; // Always reserve space on left
+        if (alignmentMode === 'right') return false; // Never reserve space on left
+        // Default 'split' mode
+        return !isOwn; // Reserve space on left for others' messages
+    };
+
+    const shouldReserveAvatarSpaceRight = () => {
+        if (alignmentMode === 'left') return false; // Never reserve space on right
+        if (alignmentMode === 'right') return true; // Always reserve space on right
+        // Default 'split' mode
+        return isOwn; // Reserve space on right for own messages
+    };
+
+    const getContentAlignment = () => {
+        if (alignmentMode === 'left') return 'items-start';
+        if (alignmentMode === 'right') return 'items-end';
+        // Default 'split' mode
+        return isOwn ? 'items-end' : 'items-start';
+    };
+
+    const getBubbleStyles = () => {
+        if (alignmentMode === 'left') {
+            return cn(
+                "bg-muted rounded-bl-sm",
+                isConsecutive && "rounded-tl-md"
+            );
+        }
+        if (alignmentMode === 'right') {
+            return cn(
+                "bg-secondary text-secondary-foreground rounded-br-sm",
+                isConsecutive && "rounded-tr-md"
+            );
+        }
+        // Default 'split' mode
+        return cn(
+            isOwn 
+                ? "bg-secondary text-secondary-foreground rounded-br-sm"
+                : "bg-muted rounded-bl-sm",
+            isConsecutive && (isOwn ? "rounded-tr-md" : "rounded-tl-md")
+        );
+    };
+
     return (
         <div
             id={`msg-${msg.id}`}
             className={cn(
                 "flex items-start gap-2 sm:gap-3 max-w-full transition-all",
-                isOwn ? "justify-end" : "justify-start",
+                getAlignment(),
                 isConsecutive ? "mt-1" : "mt-7"
             )}
         >
-            {!isOwn && (
-                <Avatar className={cn("h-8 w-8 shrink-0", isConsecutive ? "invisible" : "")}>
-                    <AvatarImage src={constructImageUrl(msg.sender?.pfp_url)} />
-                    <AvatarFallback>
-                        <User className="h-[60%] w-[60%]" />
-                    </AvatarFallback>
-                </Avatar>
+            {shouldReserveAvatarSpace() && (
+                <div className="shrink-0 w-8">
+                    {shouldShowAvatar() ? (
+                        <Avatar className={cn("h-8 w-8", isConsecutive ? "invisible" : "")}>
+                            <AvatarImage src={constructImageUrl(msg.sender?.pfp_url)} />
+                            <AvatarFallback>
+                                <User className="h-[60%] w-[60%]" />
+                            </AvatarFallback>
+                        </Avatar>
+                    ) : (
+                        <div className="h-8 w-8" />
+                    )}
+                </div>
             )}
 
-            <div className={cn("flex flex-col max-w-[85%] sm:max-w-[70%]", isOwn && "items-end")}>
+            <div className={cn("flex flex-col max-w-[85%] sm:max-w-[70%]", getContentAlignment())}>
                 {!isConsecutive && (
                     <p className="text-xs text-muted-foreground mb-1 ml-1 font-medium" style={{ color: msg.sender?.rank?.display_color }}>
                         {msg.sender?.username || '[Deleted User]'}
@@ -73,8 +145,7 @@ const MessageBubble = ({ msg, isOwn, isConsecutive, onReply, onEdit, onDelete, o
                     className={cn(
                         "group relative rounded-2xl px-4 py-2 text-sm shadow-sm cursor-pointer transition-all select-none touch-pan-y",
                         msg.is_deleted ? "italic text-muted-foreground border cursor-default" : "hover:brightness-95",
-                        isOwn ? "bg-secondary text-secondary-foreground rounded-br-sm" : "bg-muted rounded-bl-sm",
-                        isConsecutive && (isOwn ? "rounded-tr-md" : "rounded-tl-md")
+                        getBubbleStyles()
                     )}
                 >
 
@@ -104,7 +175,7 @@ const MessageBubble = ({ msg, isOwn, isConsecutive, onReply, onEdit, onDelete, o
                                     isOwn ? "right-0" : "left-0"
                                 )}
                             />
-                            <DropdownMenuContent align={isOwn ? "end" : "start"} className="z-[100]">
+                            <DropdownMenuContent align={alignmentMode === 'right' ? "end" : alignmentMode === 'left' ? "start" : (isOwn ? "end" : "start")} className="z-[100]">
                                 <DropdownMenuItem onClick={(e) => handleMenuAction(e, () => onReply(msg))}><Reply className="mr-2 h-4 w-4" /> Reply</DropdownMenuItem>
                                 <DropdownMenuItem onClick={handleCopy}><Copy className="mr-2 h-4 w-4" /> Copy</DropdownMenuItem>
                                 {isOwn && (
@@ -118,13 +189,19 @@ const MessageBubble = ({ msg, isOwn, isConsecutive, onReply, onEdit, onDelete, o
                     )}
                 </div>
             </div>
-            {isOwn && (
-                <Avatar className={cn("h-8 w-8 shrink-0", isConsecutive ? "invisible" : "")}>
-                    <AvatarImage src={constructImageUrl(currentUser?.pfp_url)} />
-                    <AvatarFallback>
-                        <User className="h-[60%] w-[60%]" />
-                    </AvatarFallback>
-                </Avatar>
+            {shouldReserveAvatarSpaceRight() && (
+                <div className="shrink-0 w-8">
+                    {shouldShowAvatarRight() ? (
+                        <Avatar className={cn("h-8 w-8", isConsecutive ? "invisible" : "")}>
+                            <AvatarImage src={constructImageUrl(currentUser?.pfp_url)} />
+                            <AvatarFallback>
+                                <User className="h-[60%] w-[60%]" />
+                            </AvatarFallback>
+                        </Avatar>
+                    ) : (
+                        <div className="h-8 w-8" />
+                    )}
+                </div>
             )}
         </div>
     );
@@ -149,6 +226,17 @@ function ConversationPage() {
     const messagesEndRef = useRef(null);
 
     const textareaRef = useRef(null);
+
+    // Message alignment mode: 'split' (default), 'left', or 'right'
+    const [messageAlignment, setMessageAlignment] = useState(() => {
+        const saved = localStorage.getItem('messageAlignment');
+        return saved || 'split';
+    });
+
+    const handleAlignmentChange = (mode) => {
+        setMessageAlignment(mode);
+        localStorage.setItem('messageAlignment', mode);
+    };
 
     useEffect(() => {
         if ((replyingToMessage || editingMessage) && textareaRef.current) {
@@ -241,25 +329,48 @@ function ConversationPage() {
 
             <div className="flex-1 flex flex-col min-w-0 h-full min-h-0 relative overflow-hidden">
 
-                <header className="flex items-center p-3 shrink-0 backdrop-blur z-10 shadow-sm">
-                    <Button variant="ghost" size="icon" className="mr-2" onClick={() => navigate('/messages')}>
-                        <ArrowLeft className="h-5 w-5" />
-                    </Button>
-                    <Avatar className="h-10 w-10 border">
-                        <AvatarImage src={constructImageUrl(otherUser.pfp_url)} />
-                        <AvatarFallback>
-                            <User className="h-[60%] w-[60%]" />
-                        </AvatarFallback>
-                    </Avatar>
-                    <div className="ml-3">
-                        <p className="font-bold text-sm flex items-center gap-1">
-                            {otherUser.username}
-                            <VerifiedIcons user={otherUser} />
-                        </p>
-                        <p className="text-xs text-muted-foreground" style={{ color: otherUser.rank?.display_color }}>
-                            {otherUser.rank?.name}
-                        </p>
+                <header className="flex items-center justify-between p-3 shrink-0 backdrop-blur z-10 shadow-sm">
+                    <div className="flex items-center flex-1 min-w-0">
+                        <Button variant="ghost" size="icon" className="mr-2 shrink-0" onClick={() => navigate('/messages')}>
+                            <ArrowLeft className="h-5 w-5" />
+                        </Button>
+                        <Avatar className="h-10 w-10 border shrink-0">
+                            <AvatarImage src={constructImageUrl(otherUser.pfp_url)} />
+                            <AvatarFallback>
+                                <User className="h-[60%] w-[60%]" />
+                            </AvatarFallback>
+                        </Avatar>
+                        <div className="ml-3 min-w-0">
+                            <p className="font-bold text-sm flex items-center gap-1">
+                                {otherUser.username}
+                                <VerifiedIcons user={otherUser} />
+                            </p>
+                            <p className="text-xs text-muted-foreground" style={{ color: otherUser.rank?.display_color }}>
+                                {otherUser.rank?.name}
+                            </p>
+                        </div>
                     </div>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="ml-2 shrink-0">
+                                <Settings className="h-5 w-5" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="z-[100]">
+                            <DropdownMenuItem onClick={() => handleAlignmentChange('split')} className={messageAlignment === 'split' ? 'bg-muted' : ''}>
+                                <Split className="mr-2 h-4 w-4" />
+                                Split (own right, others left)
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleAlignmentChange('left')} className={messageAlignment === 'left' ? 'bg-muted' : ''}>
+                                <AlignLeft className="mr-2 h-4 w-4" />
+                                All left
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleAlignmentChange('right')} className={messageAlignment === 'right' ? 'bg-muted' : ''}>
+                                <AlignRight className="mr-2 h-4 w-4" />
+                                All right
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 </header>
                 <Separator />
                 <main className="flex-1 min-h-0 overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-secondary">
@@ -282,6 +393,7 @@ function ConversationPage() {
                                     onDelete={handleDeleteClick}
                                     onReplyLinkClick={onReplyLinkClick}
                                     currentUser={currentUser}
+                                    alignmentMode={messageAlignment}
                                 />
                             ))}
                         </div>
