@@ -1,4 +1,3 @@
-
 import { Module, forwardRef } from '@nestjs/common';
 import { NotificationsService } from './notifications.service';
 import { NotificationsController } from './notifications.controller';
@@ -11,7 +10,11 @@ import { PushNotificationsService } from './push-notifications.service';
 
 @Module({
   imports: [
+    TypeOrmModule.forFeature([Notification, PushSubscription]),
     forwardRef(() => ClansModule),
   ],
+  controllers: [NotificationsController, PushNotificationsController],
+  providers: [NotificationsService, PushNotificationsService],
+  exports: [NotificationsService],
 })
 export class NotificationsModule {}

@@ -7,13 +7,16 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Separator } from '@/components/ui/separator';
-import { Loader2, Terminal, ArrowLeft, User } from 'lucide-react';
+import { Loader2, Terminal, ArrowLeft, User, Flag, MoreVertical } from 'lucide-react';
 import { useBreadcrumbs } from '@/context/BreadcrumbsContext';
-
+import { useAuth } from '@/context/AuthContext';
 
 import RenderedHtmlContent from '../components/RenderedHtmlContent';
 import { constructImageUrl } from '../utils/url';
 import VerifiedIcons from '../components/VerifiedIcons';
+import ReportModal from '../components/ReportModal';
+import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 const StickyNewsHeader = ({ article }) => (
     <div className="flex items-center justify-between px-6 py-3">
@@ -34,10 +37,12 @@ function SingleNewsPage() {
     const { newsId } = useParams();
     const navigate = useNavigate();
     const { scrollRef, setStickyHeader } = useOutletContext();
+    const { isLoggedIn } = useAuth();
 
     const [article, setArticle] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [isReportModalOpen, setIsReportModalOpen] = useState(false);
     const { setBreadcrumbs } = useBreadcrumbs();
 
     useEffect(() => {
@@ -111,18 +116,47 @@ function SingleNewsPage() {
                         </Avatar>
                     </RouterLink>
                     <div className="grid gap-1">
-                        <p className="flex items-center gap-2 text-sm font-semibold leading-none">
+                        <div className="flex items-center gap-2 text-sm font-semibold leading-none">
                             {article.author?.username || 'System'}
                             <VerifiedIcons user={article.author} />
-                        </p>
+                        </div>
                         <p className="text-xs text-muted-foreground">{new Date(article.created_at).toLocaleString()}</p>
                     </div>
+                    {isLoggedIn && (
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" className="ml-auto h-8 w-8 p-0">
+                                    <MoreVertical className="h-4 w-4" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => setIsReportModalOpen(true)}>
+                                    <Flag className="mr-2 h-4 w-4" />Report
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    )}
                 </div>
 
                 <h1 className="font-sans mt-4 text-4xl font-bold">{article.name}</h1>
                 <Separator className="my-4" />
                 <RenderedHtmlContent htmlContent={article.desc} />
             </div>
+
+            {article && (
+                <ReportModal
+                    open={isReportModalOpen}
+                    onClose={() => setIsReportModalOpen(false)}
+                    type="NEWS"
+                    targetId={article.id}
+                    targetName={article.name}
+                    entityData={{
+                        name: article.name,
+                        desc: article.desc,
+                        author: article.author,
+                    }}
+                />
+            )}
         </div>
     );
 }

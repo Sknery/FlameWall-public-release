@@ -125,10 +125,10 @@ const DashboardPostCard = ({ post }) => {
                             <AvatarFallback><User className="h-4 w-4" /></AvatarFallback>
                         </Avatar>
                         <div className="min-w-0 flex-1">
-                            <p className="text-sm font-semibold flex items-center gap-1 truncate">
+                            <div className="text-sm font-semibold flex items-center gap-1 truncate">
                                 {post.author?.username || 'Anonymous'}
                                 <VerifiedIcons user={post.author} size="0.8em" />
-                            </p>
+                            </div>
                             <p className="text-[10px] text-muted-foreground truncate">
                                 {post.author?.rank?.name || 'User'}
                             </p>

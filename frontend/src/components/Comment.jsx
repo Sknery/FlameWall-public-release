@@ -12,11 +12,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 
-import { MoreVertical, Edit, Trash2, Reply, Send, Loader2, User } from 'lucide-react';
+import { MoreVertical, Edit, Trash2, Reply, Send, Loader2, User, Flag } from 'lucide-react';
 
 
 import VoteButtons from './VoteButtons';
 import ConfirmationModal from './ConfirmationModal';
+import ReportModal from './ReportModal';
 import { constructImageUrl } from '../utils/url';
 
 const formatTimeShort = (dateString) => {
@@ -35,7 +36,7 @@ const formatTimeShort = (dateString) => {
     return Math.floor(seconds) + "s";
 };
 
-const Comment = ({ comment, onCommentAction, onVote, depth = 0 }) => {
+const Comment = ({ comment, onCommentAction, onVote, depth = 0, postData }) => {
     const { user: currentUser, authToken } = useAuth();
 
     const [isReplying, setIsReplying] = useState(false);
@@ -47,6 +48,7 @@ const Comment = ({ comment, onCommentAction, onVote, depth = 0 }) => {
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isCollapsed, setIsCollapsed] = useState(false);
+    const [isReportModalOpen, setIsReportModalOpen] = useState(false);
 
     const replyTextareaRef = useRef(null);
     const editTextareaRef = useRef(null);
@@ -147,7 +149,7 @@ const Comment = ({ comment, onCommentAction, onVote, depth = 0 }) => {
     };
 
     const nestedComments = (comment.children || []).map(child => (
-        <Comment key={child.id} comment={child} onCommentAction={onCommentAction} onVote={onVote} depth={depth + 1} />
+        <Comment key={child.id} comment={child} onCommentAction={onCommentAction} onVote={onVote} depth={depth + 1} postData={postData} />
     ));
 
     return (
@@ -176,23 +178,30 @@ const Comment = ({ comment, onCommentAction, onVote, depth = 0 }) => {
                         </div>
                     </div>
 
-                    {canManage && (
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" className="h-8 w-8 p-0">
-                                    <MoreVertical className="h-4 w-4" />
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => setIsEditing(true)}>
-                                    <Edit className="mr-2 h-4 w-4" />Edit
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" className="h-8 w-8 p-0">
+                                <MoreVertical className="h-4 w-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            {canManage && (
+                                <>
+                                    <DropdownMenuItem onClick={() => setIsEditing(true)}>
+                                        <Edit className="mr-2 h-4 w-4" />Edit
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => setIsDeleteModalOpen(true)} className="text-destructive focus:text-destructive">
+                                        <Trash2 className="mr-2 h-4 w-4" />Delete
+                                    </DropdownMenuItem>
+                                </>
+                            )}
+                            {!canManage && currentUser && (
+                                <DropdownMenuItem onClick={() => setIsReportModalOpen(true)}>
+                                    <Flag className="mr-2 h-4 w-4" />Report
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => setIsDeleteModalOpen(true)} className="text-destructive focus:text-destructive">
-                                    <Trash2 className="mr-2 h-4 w-4" />Delete
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                    )}
+                            )}
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 </div>
 
                 {!isCollapsed && (
@@ -265,6 +274,19 @@ const Comment = ({ comment, onCommentAction, onVote, depth = 0 }) => {
                 confirmText="Delete"
                 confirmColor="destructive"
                 loading={isSubmitting}
+            />
+            <ReportModal
+                open={isReportModalOpen}
+                onClose={() => setIsReportModalOpen(false)}
+                type="COMMENT"
+                targetId={comment.id}
+                targetName={`Comment by ${comment.author?.username || 'Anonymous'}`}
+                entityData={{
+                    content: comment.content,
+                    author: comment.author,
+                    postId: comment.postId,
+                    postTitle: postData?.title,
+                }}
             />
         </div>
     );

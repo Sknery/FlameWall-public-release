@@ -273,7 +273,7 @@ const SettingsPanel = ({ clan, details, setDetails, onDetailsSave, onTemplateSav
                         <Card>
                             <CardHeader><CardTitle>General Settings</CardTitle></CardHeader>
                             <CardContent className="space-y-4">
-                                <div className="space-y-2"><Label>Description</Label><Textarea name="description" value={details.description} onChange={handleDetailsChange} minRows={3} /></div>
+                                <div className="space-y-2"><Label>Description</Label><Textarea name="description" value={details.description} onChange={handleDetailsChange} rows={3} /></div>
                                 <div className="space-y-2"><Label>Join Method</Label>
                                     <Select value={details.join_type} onValueChange={(val) => setDetails(p => ({ ...p, join_type: val }))}><SelectTrigger><SelectValue placeholder="Select method..." /></SelectTrigger>
                                         <SelectContent><SelectItem value="closed">Closed (Invite Only)</SelectItem><SelectItem value="application">By Application</SelectItem><SelectItem value="open">Open to Everyone</SelectItem></SelectContent>

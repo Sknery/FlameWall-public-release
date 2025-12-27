@@ -12,27 +12,30 @@ export class RolesGuard implements CanActivate {
 
 
   canActivate(context: ExecutionContext): boolean {
-
+    const request = context.switchToHttp().getRequest();
     const requiredPowerLevel = this.reflector.getAllAndOverride<number>(ROLES_KEY, [
       context.getHandler(),
       context.getClass(),
     ]);
 
-
     if (!requiredPowerLevel) {
       return true;
     }
 
+    const { user } = request;
 
-    const { user } = context.switchToHttp().getRequest();
+    if (!user) {
+      this.logger.warn(`[ROLES-DENIED] 🚫 No user found in request for ${request.method} ${request.url}`);
+      return false;
+    }
 
-
-    const hasPermission = user && user.rank && user.rank.power_level >= requiredPowerLevel;
+    const hasPermission = user.rank && user.rank.power_level >= requiredPowerLevel;
 
     if (!hasPermission) {
       this.logger.warn(`[ROLES-DENIED] 🚫 User ID: ${user?.userId} (Power: ${user?.rank?.power_level}) denied access to a resource requiring Power Level: ${requiredPowerLevel}.`);
+      return false;
     }
 
-    return hasPermission;
+    return true;
   }
 }

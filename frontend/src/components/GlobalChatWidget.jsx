@@ -218,8 +218,7 @@ function GlobalChatWidget({ onToggle, isMobile }) {
                         ref={textareaRef}
                         placeholder="Type a message..."
                         className="pr-12 resize-none min-h-[40px]"
-                        minRows={1}
-                        maxRows={4}
+                        rows={1}
                         value={newMessage}
                         onChange={(e) => setNewMessage(e.target.value)}
                         onKeyDown={handleKeyDown}

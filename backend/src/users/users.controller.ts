@@ -190,9 +190,6 @@ export class UsersController {
   async getFollowStatus(@Param('userId', ParseIntPipe) userId: number, @Request() req) {
     const followerId = req.user.userId;
     const isFollowing = await this.usersService.isFollowing(followerId, userId);
-    if (!isFollowing) {
-      throw new NotFoundException('Not following');
-    }
-    return;
+    return { following: isFollowing };
   }
 }

@@ -341,10 +341,10 @@ function ConversationPage() {
                             </AvatarFallback>
                         </Avatar>
                         <div className="ml-3 min-w-0">
-                            <p className="font-bold text-sm flex items-center gap-1">
+                            <div className="font-bold text-sm flex items-center gap-1">
                                 {otherUser.username}
                                 <VerifiedIcons user={otherUser} />
-                            </p>
+                            </div>
                             <p className="text-xs text-muted-foreground" style={{ color: otherUser.rank?.display_color }}>
                                 {otherUser.rank?.name}
                             </p>
@@ -415,7 +415,7 @@ function ConversationPage() {
                                 ref={textareaRef}
                                 placeholder={canSendMessage ? "Type a message..." : "You can only message your friends."}
                                 className="min-h-[44px] max-h-[150px] py-3 px-4 resize-none rounded-2xl border-muted-foreground/20 focus-visible:ring-1 bg-muted/30 hover:bg-muted/50 transition-colors"
-                                minRows={1}
+                                rows={1}
                                 value={newMessage}
                                 onChange={(e) => setNewMessage(e.target.value)}
                                 onKeyDown={(e) => {

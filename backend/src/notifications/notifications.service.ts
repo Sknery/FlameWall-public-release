@@ -181,4 +181,9 @@ export class NotificationsService {
     const message = `The clan owner, ${ownerName}, has permanently deleted the clan.`;
     await this.create(member, title, message, 'clan.deleted');
   }
+
+  // Public method for creating notifications from other services
+  async createNotification(user: User, title: string, message: string, type: string, link: string | null = null): Promise<void> {
+    await this.create(user, title, message, type, link);
+  }
 }

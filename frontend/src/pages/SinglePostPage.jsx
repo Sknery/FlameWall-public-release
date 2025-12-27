@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Separator } from '@/components/ui/separator';
-import { MoreVertical, Edit, Trash2, ShieldAlert, Loader2, Terminal, ArrowLeft, Send, User, Ban } from 'lucide-react';
+import { MoreVertical, Edit, Trash2, ShieldAlert, Loader2, Terminal, ArrowLeft, Send, User, Ban, Flag } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 import VoteButtons from '../components/VoteButtons';
@@ -23,6 +23,7 @@ import Comment from '../components/Comment';
 import RenderedHtmlContent from '../components/RenderedHtmlContent';
 import { useBreadcrumbs } from '@/context/BreadcrumbsContext';
 import ConfirmationModal from '../components/ConfirmationModal';
+import ReportModal from '../components/ReportModal';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -143,6 +144,7 @@ function SinglePostPage() {
 
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [isBanModalOpen, setIsBanModalOpen] = useState(false);
+    const [isReportModalOpen, setIsReportModalOpen] = useState(false);
 
     useEffect(() => {
         if (!scrollRef?.current || !post) return;
@@ -305,6 +307,7 @@ function SinglePostPage() {
                                 <Button variant="outline"><ShieldAlert className="mr-2 h-4 w-4" /> Admin Actions</Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => setIsReportModalOpen(true)}><Flag className="mr-2 h-4 w-4" />Report Post</DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => setIsDeleteModalOpen(true)} className="text-destructive focus:text-destructive"><Trash2 className="mr-2 h-4 w-4" />Delete Post</DropdownMenuItem>
                                 {post.author && (
                                     <DropdownMenuItem onClick={() => setIsBanModalOpen(true)} className="text-destructive focus:text-destructive"><Ban className="mr-2 h-4 w-4" />Ban Author</DropdownMenuItem>
@@ -325,12 +328,24 @@ function SinglePostPage() {
                             </Avatar>
                         </RouterLink>
                         <div className="grid gap-1">
-                            <p className="flex items-center gap-2 text-sm font-semibold leading-none">
+                            <div className="flex items-center gap-2 text-sm font-semibold leading-none">
                                 {post.author?.username || 'Anonymous'}
                                 <VerifiedIcons user={post.author} />
-                            </p>
+                            </div>
                             <p className="text-xs text-muted-foreground">{new Date(post.created_at).toLocaleString()}</p>
                         </div>
+                        {isLoggedIn && !canManagePost && (
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" className="ml-auto h-8 w-8 p-0">
+                                        <MoreVertical className="h-4 w-4" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onClick={() => setIsReportModalOpen(true)}><Flag className="mr-2 h-4 w-4" />Report</DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        )}
                         {canManagePost && !isAdmin && (
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
@@ -385,6 +400,7 @@ function SinglePostPage() {
                                 comment={comment}
                                 onCommentAction={fetchPost}
                                 onVote={handleVote}
+                                postData={post}
                             />
                         ))}
                     </div>
@@ -409,6 +425,21 @@ function SinglePostPage() {
                 onConfirm={handleBanUser}
                 loading={isActionLoading}
             />
+
+            {post && (
+                <ReportModal
+                    open={isReportModalOpen}
+                    onClose={() => setIsReportModalOpen(false)}
+                    type="POST"
+                    targetId={post.id}
+                    targetName={post.title}
+                    entityData={{
+                        title: post.title,
+                        content: post.content,
+                        author: post.author,
+                    }}
+                />
+            )}
         </>
     );
 }

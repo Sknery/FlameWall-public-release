@@ -123,10 +123,10 @@ const UserListCard = ({ user }) => (
                     <AvatarFallback><User className="h-5 w-5" /></AvatarFallback>
                 </Avatar>
                 <div className="min-w-0">
-                    <p className="text-sm font-bold flex items-center gap-1 truncate">
+                    <div className="text-sm font-bold flex items-center gap-1 truncate">
                         {user.username}
                         <VerifiedIcons user={user} size="0.8em" />
-                    </p>
+                    </div>
                     <p className="text-xs font-medium opacity-80 truncate" style={{ color: user.rank?.display_color }}>
                         {user.rank?.name}
                     </p>

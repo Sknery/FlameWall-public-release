@@ -10,13 +10,14 @@ import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Separator } from '@/components/ui/separator';
-import { Plus, MoreVertical, Edit, Trash2, Loader2, Terminal, User, MessageSquare } from 'lucide-react';
+import { Plus, MoreVertical, Edit, Trash2, Loader2, Terminal, User, MessageSquare, Flag } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { motion } from 'framer-motion';
 
 import VoteButtons from '../components/VoteButtons';
 import { constructImageUrl } from '../utils/url';
 import ConfirmationModal from '../components/ConfirmationModal';
+import ReportModal from '../components/ReportModal';
 import { listContainer, fadeInUp } from '../utils/animations';
 import { useBreadcrumbs } from '@/context/BreadcrumbsContext';
 
@@ -63,6 +64,8 @@ function PostsPage() {
     const [modalOpen, setModalOpen] = useState(false);
     const [modalContent, setModalContent] = useState({ title: '', content: '', onConfirm: null });
     const [isActionLoading, setIsActionLoading] = useState(false);
+    const [reportModalOpen, setReportModalOpen] = useState(false);
+    const [selectedPostForReport, setSelectedPostForReport] = useState(null);
 
     useEffect(() => {
         setBreadcrumbs([
@@ -188,19 +191,29 @@ function PostsPage() {
                                             <p className="text-[10px] text-muted-foreground">{new Date(post.created_at).toLocaleDateString()}</p>
                                         </div>
                                     </div>
-                                    {canManagePost && (
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" className="h-8 w-8 p-0 shrink-0">
-                                                    <MoreVertical className="h-4 w-4" />
-                                                </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end">
-                                                <DropdownMenuItem onClick={() => navigate(`/posts/${post.id}/edit`)}><Edit className="mr-2 h-4 w-4" />Edit</DropdownMenuItem>
-                                                <DropdownMenuItem onClick={() => openDeleteModal(post)} className="text-destructive focus:text-destructive"><Trash2 className="mr-2 h-4 w-4" />Delete</DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                    )}
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="ghost" className="h-8 w-8 p-0 shrink-0">
+                                                <MoreVertical className="h-4 w-4" />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                            {canManagePost && (
+                                                <>
+                                                    <DropdownMenuItem onClick={() => navigate(`/posts/${post.id}/edit`)}><Edit className="mr-2 h-4 w-4" />Edit</DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => openDeleteModal(post)} className="text-destructive focus:text-destructive"><Trash2 className="mr-2 h-4 w-4" />Delete</DropdownMenuItem>
+                                                </>
+                                            )}
+                                            {!canManagePost && isLoggedIn && (
+                                                <DropdownMenuItem onClick={() => {
+                                                    setSelectedPostForReport(post);
+                                                    setReportModalOpen(true);
+                                                }}>
+                                                    <Flag className="mr-2 h-4 w-4" />Report
+                                                </DropdownMenuItem>
+                                            )}
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
                                 </CardHeader>
 
                                 <CardContent className="p-4 pt-0 flex-1 flex flex-col">
@@ -247,6 +260,24 @@ function PostsPage() {
                 confirmColor={modalContent.confirmColor}
                 loading={isActionLoading}
             />
+
+            {selectedPostForReport && (
+                <ReportModal
+                    open={reportModalOpen}
+                    onClose={() => {
+                        setReportModalOpen(false);
+                        setSelectedPostForReport(null);
+                    }}
+                    type="POST"
+                    targetId={selectedPostForReport.id}
+                    targetName={selectedPostForReport.title}
+                    entityData={{
+                        title: selectedPostForReport.title,
+                        content: selectedPostForReport.content,
+                        author: selectedPostForReport.author,
+                    }}
+                />
+            )}
 
         </div>
     );

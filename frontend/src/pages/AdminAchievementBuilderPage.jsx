@@ -249,7 +249,7 @@ const SettingsAndPreview = ({ achievementData, onUpdate, allGroups, onGroupChang
                 <CardHeader><CardTitle>Settings & Preview</CardTitle></CardHeader>
                 <CardContent className="space-y-4">
                     <div className="space-y-2"><Label>Name</Label><Input name="name" value={achievementData.name} onChange={(e) => onUpdate(p => ({ ...p, name: e.target.value }))} required /></div>
-                    <div className="space-y-2"><Label>Description</Label><Textarea name="description" value={achievementData.description} onChange={(e) => onUpdate(p => ({ ...p, description: e.target.value }))} minRows={3} required /></div>
+                    <div className="space-y-2"><Label>Description</Label><Textarea name="description" value={achievementData.description} onChange={(e) => onUpdate(p => ({ ...p, description: e.target.value }))} rows={3} required /></div>
 
                     <div className="space-y-2">
                         <Label>Parent Achievement</Label>

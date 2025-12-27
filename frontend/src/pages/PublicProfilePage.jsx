@@ -165,12 +165,11 @@ function PublicProfilePage() {
                 setFriendship(statusResponse.data);
 
                 try {
-                    await axios.get(`/api/users/${fetchedProfile.id}/follow-status`, config);
-                    setFollowStatus('following');
+                    const followStatusResponse = await axios.get(`/api/users/${fetchedProfile.id}/follow-status`, config);
+                    setFollowStatus(followStatusResponse.data.following ? 'following' : 'not_following');
                 } catch (followError) {
-                    if (followError.response && followError.response.status === 404) {
-                        setFollowStatus('not_following');
-                    }
+                    console.error('Failed to fetch follow status:', followError);
+                    setFollowStatus('not_following');
                 }
 
             } else {

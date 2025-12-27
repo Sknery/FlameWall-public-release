@@ -45,6 +45,10 @@ import { NavigationModule } from './navigation/navigation.module';
 import { TagsModule } from './tags/tags.module';
 import { Tag } from './tags/entities/tag.entity';
 import { MailerModule } from './mailer/mailer.module';
+import { ReportsModule } from './reports/reports.module';
+import { Report } from './reports/entities/report.entity';
+import { SupportModule } from './support/support.module';
+import { SupportTicket, SupportTicketReply } from './support/entities/support-ticket.entity';
 
 @Module({
   imports: [
@@ -66,7 +70,7 @@ import { MailerModule } from './mailer/mailer.module';
         password: configService.get<string>('DB_PASSWORD'),
         database: configService.get<string>('DB_DATABASE'),
         entities: [
-          User, ShopItem, Post, Friendship, Message, News, Notification, Comment, Purchase, LinkCode, Rank, CustomPage, Achievement, AchievementProgress, SiteSettings, Tag
+          User, ShopItem, Post, Friendship, Message, News, Notification, Comment, Purchase, LinkCode, Rank, CustomPage, Achievement, AchievementProgress, SiteSettings, Tag, Report, SupportTicket, SupportTicketReply
         ],
         synchronize: false,
         autoLoadEntities: true,
@@ -96,6 +100,8 @@ import { MailerModule } from './mailer/mailer.module';
     SettingsModule,
     NavigationModule,
     TagsModule,
+    ReportsModule,
+    SupportModule,
   ],
   controllers: [AppController],
   providers: [AppService],

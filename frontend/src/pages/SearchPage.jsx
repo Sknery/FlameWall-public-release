@@ -113,7 +113,7 @@ function SearchPage() {
                                                 <Avatar className="h-16 w-16 mb-2"><AvatarImage src={constructImageUrl(user.pfp_url)} /><AvatarFallback>
                                                     <User className="h-[60%] w-[60%]" />
                                                 </AvatarFallback></Avatar>
-                                                <p className="font-semibold flex items-center gap-1">{user.username}<VerifiedIcons user={user} /></p>
+                                                <div className="font-semibold flex items-center gap-1">{user.username}<VerifiedIcons user={user} /></div>
                                                 <p className="text-xs font-semibold" style={{ color: user.rank?.display_color }}>{user.rank?.name}</p>
                                             </CardContent>
                                         </Card>
